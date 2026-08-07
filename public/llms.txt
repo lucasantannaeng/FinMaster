@@ -1,0 +1,13 @@
+# FinMaster
+
+> FinMaster é um aplicativo web (PWA) de controle financeiro pessoal em português, com gestão de contas, cartões de crédito, categorias, relatório de imposto de renda e integração com cripto via OKX. O acesso ao app principal requer autenticação; apenas as páginas abaixo são públicas.
+
+## Pages
+
+- [Entrar ou criar conta](/auth): Tela de autenticação com email e senha (Supabase Auth).
+- [Instalar o app](/install): Instruções para adicionar o FinMaster à tela inicial em Android (prompt nativo) e iOS (Safari).
+- [Confiança e privacidade](/trust): Explicação sobre autenticação, isolamento de dados por usuário (Row-Level Security) e contato de segurança.
+
+## Optional
+
+- [Página inicial](/): Redireciona para o login quando não autenticado.

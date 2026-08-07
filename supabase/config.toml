@@ -1,0 +1,22 @@
+project_id = "peiwulcxpihozgcmbgua"
+
+[functions.parse-transaction]
+verify_jwt = false
+
+[functions.get-okx-balance]
+verify_jwt = false
+
+[functions.ai-consultant]
+verify_jwt = false
+
+[functions.analyze-deductions]
+verify_jwt = false
+
+[functions.ocr-receipt]
+verify_jwt = false
+
+[functions.detect-subscriptions]
+verify_jwt = false
+
+[functions.generate-budget]
+verify_jwt = false
