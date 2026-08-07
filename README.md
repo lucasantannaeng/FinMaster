@@ -1,73 +1,121 @@
-# Welcome to your Lovable project
+# 💎 FinMaster — Plataforma Inteligente de Gestão Financeira Pessoal
 
-## Project info
+[![React](https://img.shields.io/badge/React-18.3-blue.svg?logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg?logo=typescript)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.4-purple.svg?logo=vite)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC.svg?logo=tailwind-css)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-green.svg?logo=supabase)](https://supabase.com/)
+[![DevSecOps](https://img.shields.io/badge/DevSecOps-Audited%20%26%20Sanitized-brightgreen.svg)]()
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**FinMaster** é uma solução moderna e completa para Gestão Financeira Pessoal e Planejamento Orçamentário com suporte a Inteligência Artificial. A aplicação centraliza o controle de receitas, despesas, cartões de crédito, cotação e controle de ativos cripto, cálculo da taxa/hora de trabalho e preparação de relatórios para a declaração de Imposto de Renda.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🚀 Principais Funcionalidades
 
-**Use Lovable**
+- 📊 **Dashboard Financeiro Consolidado**: Visualização clara de saldos, entradas, saídas, receitas recorrentes, metas de economia e evolução temporal via gráficos interativos (`Recharts`).
+- 🤖 **Lançamento Inteligente de Transações (Smart Transaction Input)**: Entrada rápida de receitas e despesas por linguagem natural (texto livre ou voz), com auto-categorização por IA.
+- 💳 **Gestão de Cartões & Limites de Crédito**: Acompanhamento de faturas, limites disponíveis, datas de fechamento e vencimento de múltiplos cartões.
+- 🪙 **Integração Crypto & Multi-Ativos**: Acompanhamento e gestão de carteiras de criptoativos e investimentos integrados.
+- ⏱️ **Calculadora de Valor/Hora de Trabalho**: Algoritmo para cálculo do valor real da hora trabalhada do usuário com base no seu custo de vida e jornada de trabalho.
+- 📑 **Relatório de Imposto de Renda / Fiscal**: Agrupamento automatizado de rendimentos e despesas dedutíveis para apoio na declaração anual de IR.
+- 🛡️ **Segurança & Privacidade (Trust Engine)**: Criptografia de dados sensíveis e autenticação segura via Supabase Auth com Row Level Security (RLS).
+- 📱 **Suporte PWA Instalável**: Instalação nativa em dispositivos móveis e desktops com suporte a cache e uso offline.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠️ Stack Tecnológica
 
-**Use your preferred IDE**
+### **Frontend & Interface**
+- **Core:** React 18 + TypeScript
+- **Bundler:** Vite
+- **Estilização:** Tailwind CSS + Radix UI (shadcn/ui) + Lucide Icons
+- **Gráficos & Métricas:** Recharts
+- **SEO & Meta Tags:** React Helmet Async
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### **Inteligência & IA**
+- **Processamento de Linguagem Natural / IA:** Lançamento inteligente com parsers de texto e integrações de linguagem.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### **Backend & Infraestrutura**
+- **Banco de Dados & Autenticação:** Supabase PostgreSQL + Supabase Auth
+- **PWA:** `vite-plugin-pwa`
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## ⚙️ Configuração de Variáveis de Ambiente (`.env`)
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Crie um arquivo `.env` na raiz do projeto com base no modelo fornecido no `.env.example`:
 
-# Step 3: Install the necessary dependencies.
-npm i
+```env
+# Supabase Configuration
+VITE_SUPABASE_URL=https://sua-instancia.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sua_chave_publica_anonima_aqui
+VITE_SUPABASE_PROJECT_ID=seu_project_id_aqui
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Integrações Opcionais de IA e Cripto (opcional)
+APP_ORIGIN=https://seu-dominio-app.com
+LOVABLE_API_KEY=sua_chave_lovable_opcional
+OKX_API_KEY=sua_chave_okx_opcional
+OKX_SECRET_KEY=seu_segredo_okx_opcional
+OKX_PASSPHRASE=sua_passphrase_okx_opcional
+OPENROUTER_API_KEY=sua_chave_openrouter_opcional
+GROQ_API_KEY=sua_chave_groq_opcional
 ```
 
-**Edit a file directly in GitHub**
+> 🛡️ **DevSecOps Note:** Nenhuma chave real ou segredo deve ser commitado no repositório. O arquivo `.env` está devidamente bloqueado no `.gitignore`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## 💻 Guia de Execução Local
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Pré-requisitos
+- **Node.js** v18+
+- Gerenciador de pacotes: **npm**, **bun** ou **pnpm**
 
-## What technologies are used for this project?
+### Passo a Passo
 
-This project is built with:
+1. **Clonar o Repositório:**
+   ```bash
+   git clone https://github.com/lucasantannaeng/FinMaster.git
+   cd FinMaster
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. **Instalar Dependências:**
+   ```bash
+   npm install
+   # ou
+   bun install
+   ```
 
-## How can I deploy this project?
+3. **Configurar o Ambiente Local:**
+   ```bash
+   cp .env.example .env
+   # Edite o arquivo .env preenchendo as variáveis correspondentes ao Supabase
+   ```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+4. **Executar a Aplicação:**
+   ```bash
+   npm run dev
+   # ou
+   bun dev
+   ```
+   Acesse a aplicação no navegador em `http://localhost:8080`.
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 📜 Scripts Disponíveis
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- `npm run dev`: Inicia o servidor de desenvolvimento Vite.
+- `npm run build`: Compila e gera o build de produção na pasta `dist/`.
+- `npm run preview`: Executa a visualização do build compilado.
+- `npm run lint`: Executa a verificação estática do código com ESLint.
+- `npm run test`: Executa os testes automatizados com Vitest.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## 🔒 Conformidade DevSecOps
+
+Este projeto é mantido sob práticas rigorosas de DevSecOps:
+- Nenhuma chave de API, credencial ou segredo em hardcode.
+- Bloqueio integral de arquivos `.env` e diretório `node_modules/` no `.gitignore`.
+- Arquitetura de permissões baseada em RLS (Row Level Security) no Supabase.
