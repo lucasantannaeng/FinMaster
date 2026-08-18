@@ -1,7 +1,8 @@
 {
-  "name": "vite_react_shadcn_ts",
-  "private": true,
-  "version": "0.0.0",
+  "name": "finmaster",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "Luca Rodrigues Gomes de Sant'Anna <lucasantannaeng@gmail.com>",
   "type": "module",
   "scripts": {
     "dev": "vite",
