@@ -77,9 +77,31 @@ serve(async (req) => {
       );
     }
 
-    const apiKey = Deno.env.get("OKX_API_KEY")!;
-    const secretKey = Deno.env.get("OKX_SECRET_KEY")!;
-    const passphrase = Deno.env.get("OKX_PASSPHRASE")!;
+    const userId = claimsData.claims.sub as string;
+    
+    // 1. Tenta extrair credenciais do usuário do corpo da requisição ou profile
+    let bodyData: any = {};
+    try {
+      if (req.headers.get("content-type")?.includes("application/json")) {
+        bodyData = await req.json();
+      }
+    } catch { /* sem body */ }
+
+    const apiKey = bodyData.apiKey || Deno.env.get(`OKX_API_KEY_${userId}`) || Deno.env.get("OKX_API_KEY");
+    const secretKey = bodyData.secretKey || Deno.env.get(`OKX_SECRET_KEY_${userId}`) || Deno.env.get("OKX_SECRET_KEY");
+    const passphrase = bodyData.passphrase || Deno.env.get(`OKX_PASSPHRASE_${userId}`) || Deno.env.get("OKX_PASSPHRASE");
+
+    if (!apiKey || !secretKey || !passphrase) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Credenciais OKX não configuradas para este usuário.", 
+          requiresSetup: true,
+          totalEquity: 0,
+          assets: []
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Fetch balance and tickers in parallel
     const [balanceData, tickersData] = await Promise.all([
