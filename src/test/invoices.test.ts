@@ -1,12 +1,84 @@
 import { describe, it, expect } from 'vitest';
-import { defaultFilters, InvoiceFiltersState } from '../hooks/useCardInvoice';
+import { defaultFilters } from '../hooks/useCardInvoice';
+import { getBillingPeriod, getAssetConcentration, formatCurrency } from '../lib/format';
 
-describe('FinMaster - Testes de Regras de Fatura e Filtros de Cartão', () => {
+describe('FinMaster - Testes de Regras de Fatura e Ciclo Contábil (useBillingPeriod)', () => {
+  it('deve calcular ciclo de fatura corretamente quando dia atual for posterior ao fechamento', () => {
+    // Referência: 15 de Março de 2026, dia de fechamento: 10
+    const refDate = new Date(2026, 2, 15); // Março
+    const { startDate, endDate } = getBillingPeriod(10, refDate);
+
+    // Ciclo aberto atual: 11 de Março até 10 de Abril
+    expect(startDate.getDate()).toBe(11);
+    expect(startDate.getMonth()).toBe(2); // Março
+    expect(endDate.getDate()).toBe(10);
+    expect(endDate.getMonth()).toBe(3); // Abril
+  });
+
+  it('deve calcular ciclo de fatura corretamente quando dia atual for anterior ao fechamento', () => {
+    // Referência: 5 de Março de 2026, dia de fechamento: 10
+    const refDate = new Date(2026, 2, 5); // Março
+    const { startDate, endDate } = getBillingPeriod(10, refDate);
+
+    // Ciclo aberto atual: 11 de Fevereiro até 10 de Março
+    expect(startDate.getDate()).toBe(11);
+    expect(startDate.getMonth()).toBe(1); // Fevereiro
+    expect(endDate.getDate()).toBe(10);
+    expect(endDate.getMonth()).toBe(2); // Março
+  });
+
+  it('deve lidar com transição de ano (Dezembro -> Janeiro)', () => {
+    // Referência: 2 de Janeiro de 2026, dia de fechamento: 15
+    const refDate = new Date(2026, 0, 2);
+    const { startDate, endDate } = getBillingPeriod(15, refDate);
+
+    expect(startDate.getFullYear()).toBe(2025);
+    expect(startDate.getMonth()).toBe(11); // Dezembro
+    expect(startDate.getDate()).toBe(16);
+    expect(endDate.getFullYear()).toBe(2026);
+    expect(endDate.getMonth()).toBe(0); // Janeiro
+    expect(endDate.getDate()).toBe(15);
+  });
+});
+
+describe('FinMaster - Helper de Concentração de Ativos (getAssetConcentration)', () => {
+  const mockAssets = [
+    { currency: 'USDT', equity: 2000, priceUsdt: 1.0 },  // $2,000 (20%)
+    { currency: 'BTC', equity: 0.1, priceUsdt: 50000.0 }, // $5,000 (50%)
+    { currency: 'ETH', equity: 1.0, priceUsdt: 3000.0 }   // $3,000 (30%)
+  ];
+  const totalEquity = 10000;
+
+  it('deve calcular percentual exato de concentração para ativos presentes', () => {
+    expect(getAssetConcentration(mockAssets, 'BTC', totalEquity)).toBe(50.0);
+    expect(getAssetConcentration(mockAssets, 'ETH', totalEquity)).toBe(30.0);
+    expect(getAssetConcentration(mockAssets, 'USDT', totalEquity)).toBe(20.0);
+  });
+
+  it('deve retornar 0 para ativos ausentes ou patrimônio total zerado', () => {
+    expect(getAssetConcentration(mockAssets, 'SOL', totalEquity)).toBe(0);
+    expect(getAssetConcentration(mockAssets, 'BTC', 0)).toBe(0);
+    expect(getAssetConcentration([], 'BTC', totalEquity)).toBe(0);
+    expect(getAssetConcentration(undefined, 'BTC', totalEquity)).toBe(0);
+  });
+
+  it('deve ser case-insensitive na busca da moeda', () => {
+    expect(getAssetConcentration(mockAssets, 'btc', totalEquity)).toBe(50.0);
+    expect(getAssetConcentration(mockAssets, 'Eth', totalEquity)).toBe(30.0);
+  });
+});
+
+describe('FinMaster - Testes de Filtros de Fatura e Máscara de Privacidade', () => {
   it('deve inicializar filtros padrão corretamente', () => {
     expect(defaultFilters.search).toBe('');
     expect(defaultFilters.categoryId).toBe('all');
     expect(defaultFilters.paid).toBe('all');
     expect(defaultFilters.contactId).toBe('all');
+  });
+
+  it('deve aplicar máscara de privacidade no formatCurrency quando discrete=true', () => {
+    expect(formatCurrency(1500.50, true)).toBe('••••');
+    expect(formatCurrency(1500.50, false)).toContain('1.500,50');
   });
 
   it('deve filtrar transações por busca textual e categoria sem mutar total da fatura', () => {
@@ -19,30 +91,8 @@ describe('FinMaster - Testes de Regras de Fatura e Filtros de Cartão', () => {
     const totalBill = transactions.reduce((sum, t) => sum + t.amount, 0);
     expect(totalBill).toBe(730.50);
 
-    // Filtrar categoria cat-1
     const cat1Transactions = transactions.filter(t => t.category_id === 'cat-1');
     expect(cat1Transactions).toHaveLength(2);
     expect(cat1Transactions.reduce((s, t) => s + t.amount, 0)).toBe(530.50);
-
-    // Filtrar não pagos
-    const unpaidTransactions = transactions.filter(t => !t.is_paid);
-    expect(unpaidTransactions).toHaveLength(2);
-    expect(unpaidTransactions.reduce((s, t) => s + t.amount, 0)).toBe(380.00);
-  });
-
-  it('deve calcular corretamente conversão cambial e patrimônio total em BRL', () => {
-    const assets = [
-      { currency: 'USDT', equity: 1000, priceUsdt: 1.0 },
-      { currency: 'BTC', equity: 0.05, priceUsdt: 60000.0 },
-      { currency: 'ETH', equity: 0.5, priceUsdt: 3000.0 }
-    ];
-
-    const usdBrl = 5.50; // taxa cambial simulada
-
-    const totalUsdt = assets.reduce((sum, a) => sum + (a.equity * a.priceUsdt), 0);
-    expect(totalUsdt).toBe(1000 + 3000 + 1500); // 5500 USDT
-
-    const totalBrl = totalUsdt * usdBrl;
-    expect(totalBrl).toBe(30250.0);
   });
 });

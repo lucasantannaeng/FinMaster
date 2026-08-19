@@ -22,15 +22,31 @@ import SubscriptionAlerts from '@/components/settings/SubscriptionAlerts';
 
 const Settings = () => {
   const { discreteMode, setDiscreteMode, baseCurrency, setBaseCurrency } = useAppSettings();
-  const [biometric, setBiometric] = useState(false);
-  const [biometricSupported, setBiometricSupported] = useState(true);
+  const [biometric, setBiometric] = useState(() => localStorage.getItem('biometric_enabled') === 'true');
+  const [biometricSupported, setBiometricSupported] = useState(false);
   const [alertBudget, setAlertBudget] = useState(true);
 
   useEffect(() => {
     // Check WebAuthn support
-    const supported = !!(window.PublicKeyCredential);
-    setBiometricSupported(supported);
-  }, []);
+    const checkSupport = async () => {
+      const supported = typeof window !== 'undefined' && !!(window.PublicKeyCredential);
+      if (supported) {
+        try {
+          const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+          setBiometricSupported(available);
+          if (!available && biometric) {
+            setBiometric(false);
+            localStorage.removeItem('biometric_enabled');
+          }
+        } catch {
+          setBiometricSupported(false);
+        }
+      } else {
+        setBiometricSupported(false);
+      }
+    };
+    checkSupport();
+  }, [biometric]);
 
   const handleBiometricToggle = async (checked: boolean) => {
     if (!biometricSupported) {
@@ -40,19 +56,20 @@ const Settings = () => {
 
     if (checked) {
       try {
-        // Test WebAuthn availability
         const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
         if (!available) {
           toast.error('Nenhum autenticador biométrico encontrado neste dispositivo');
           return;
         }
         setBiometric(true);
-        toast.success('Biometria ativada');
+        localStorage.setItem('biometric_enabled', 'true');
+        toast.success('Biometria WebAuthn ativada com sucesso');
       } catch {
         toast.error('Erro ao configurar biometria');
       }
     } else {
       setBiometric(false);
+      localStorage.removeItem('biometric_enabled');
       toast.success('Biometria desativada');
     }
   };

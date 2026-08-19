@@ -36,3 +36,22 @@ export const getBillingPeriod = (closingDay: number, referenceDate: Date = new D
 
   return { startDate, endDate };
 };
+
+export interface CryptoAssetItem {
+  currency: string;
+  equity: number;
+  priceUsdt: number;
+}
+
+export const getAssetConcentration = (
+  assets: CryptoAssetItem[] | undefined,
+  targetCurrency: string,
+  totalEquity: number
+): number => {
+  if (!assets || !assets.length || totalEquity <= 0) return 0;
+  const asset = assets.find(a => a.currency.toUpperCase() === targetCurrency.toUpperCase());
+  if (!asset || asset.equity <= 0 || asset.priceUsdt <= 0) return 0;
+  const assetValueUsdt = asset.equity * asset.priceUsdt;
+  return Number(((assetValueUsdt / totalEquity) * 100).toFixed(2));
+};
+

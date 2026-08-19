@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatCurrency, formatDate, getBillingPeriod } from '@/lib/format';
+import { formatCurrency, formatDate, getBillingPeriod, getAssetConcentration } from '@/lib/format';
 import { Wallet, CreditCard, Plus, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
 import InfoButton from '@/components/InfoButton';
 import { Button } from '@/components/ui/button';
@@ -40,55 +41,56 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { discreteMode } = useAppSettings();
   const navigate = useNavigate();
-  const [totalBalance, setTotalBalance] = useState(0);
-  const [currentBill, setCurrentBill] = useState(0);
-  const [monthIncome, setMonthIncome] = useState(0);
-  const [monthExpense, setMonthExpense] = useState(0);
-  const [monthlyIncome, setMonthlyIncome] = useState(0);
-  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
-  const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
-  const [cryptoBrl, setCryptoBrl] = useState(0);
-  const [cryptoData, setCryptoData] = useState<OkxData | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  // Simulator state
+  // Simulator & Consultant UI state
   const [simulatorOpen, setSimulatorOpen] = useState(false);
   const [simulatorSavings, setSimulatorSavings] = useState(0);
-  // AI Consultant state
   const [consultantOpen, setConsultantOpen] = useState(false);
   const [consultantInitialMsg, setConsultantInitialMsg] = useState<string | undefined>();
 
   const d = discreteMode;
 
-  const loadDashboardData = useCallback(async () => {
-    if (!user) return;
-    try {
+  const { data: dashboardData, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['dashboard-data', user?.id],
+    queryFn: async () => {
+      if (!user) throw new Error('Não autenticado');
+
       const [accountsRes, cardsRes, profileRes] = await Promise.all([
         supabase.from('accounts').select('balance'),
         supabase.from('credit_cards').select('id, closing_day'),
         supabase.from('profiles').select('monthly_income').eq('user_id', user.id).single(),
       ]);
 
-      const total = accountsRes.data?.reduce((sum, a) => sum + Number(a.balance), 0) || 0;
-      setTotalBalance(total);
-      setMonthlyIncome(Number(profileRes.data?.monthly_income || 0));
+      const totalBalance = accountsRes.data?.reduce((sum, a) => sum + Number(a.balance), 0) || 0;
+      const monthlyIncome = Number(profileRes.data?.monthly_income || 0);
 
       let totalBill = 0;
       const cards = cardsRes.data || [];
       if (cards.length > 0) {
-        for (const card of cards) {
-          const { startDate, endDate } = getBillingPeriod(card.closing_day);
-          const { data: cardTxs } = await supabase
-            .from('transactions')
-            .select('amount')
-            .eq('card_id', card.id)
-            .eq('type', 'expense')
-            .gte('date', startDate.toISOString().split('T')[0])
-            .lte('date', endDate.toISOString().split('T')[0]);
-          totalBill += cardTxs?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+        // Query em lote único para eliminar padrão N+1
+        const periods = cards.map(c => ({ id: c.id, ...getBillingPeriod(c.closing_day) }));
+        const minStartDate = periods.reduce((min, p) => p.startDate < min ? p.startDate : min, periods[0].startDate);
+        const maxEndDate = periods.reduce((max, p) => p.endDate > max ? p.endDate : max, periods[0].endDate);
+
+        const { data: allCardTxs } = await supabase
+          .from('transactions')
+          .select('card_id, amount, date')
+          .in('card_id', cards.map(c => c.id))
+          .eq('type', 'expense')
+          .gte('date', minStartDate.toISOString().split('T')[0])
+          .lte('date', maxEndDate.toISOString().split('T')[0]);
+
+        if (allCardTxs) {
+          for (const p of periods) {
+            const startStr = p.startDate.toISOString().split('T')[0];
+            const endStr = p.endDate.toISOString().split('T')[0];
+            const cardTotal = allCardTxs
+              .filter(t => t.card_id === p.id && t.date >= startStr && t.date <= endStr)
+              .reduce((sum, t) => sum + Number(t.amount), 0);
+            totalBill += cardTotal;
+          }
         }
       }
-      setCurrentBill(totalBill);
 
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
@@ -100,10 +102,8 @@ const Dashboard = () => {
         .gte('date', monthStart)
         .lte('date', monthEnd);
 
-      const income = monthTxs?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) || 0;
-      const expense = monthTxs?.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0) || 0;
-      setMonthIncome(income);
-      setMonthExpense(expense);
+      const monthIncome = monthTxs?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) || 0;
+      const monthExpense = monthTxs?.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0) || 0;
 
       const { data: categories } = await supabase.from('categories').select('id, name, color');
       const catMap = new Map(categories?.map(c => [c.id, c]) || []);
@@ -116,42 +116,59 @@ const Dashboard = () => {
           catTotals.set(cat.id, existing);
         }
       });
-      setExpensesByCategory(Array.from(catTotals.values()).sort((a, b) => b.value - a.value).slice(0, 6));
+      const expensesByCategory = Array.from(catTotals.values()).sort((a, b) => b.value - a.value).slice(0, 6);
 
       const { data: recent } = await supabase
         .from('transactions')
         .select('*')
         .order('date', { ascending: false })
         .limit(5);
-      setRecentTransactions(recent || []);
 
+      let cryptoBrl = 0;
+      let cryptoData: OkxData | null = null;
       try {
         const { data: cryptoResult } = await supabase.functions.invoke('get-okx-balance');
         if (cryptoResult?.totalBrl) {
-          setCryptoBrl(cryptoResult.totalBrl);
-          setCryptoData(cryptoResult);
+          cryptoBrl = cryptoResult.totalBrl;
+          cryptoData = cryptoResult;
         }
       } catch { /* ignore */ }
-    } catch (err) {
-      console.error('Dashboard load error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+      return {
+        totalBalance,
+        currentBill: totalBill,
+        monthIncome,
+        monthExpense,
+        monthlyIncome,
+        expensesByCategory,
+        recentTransactions: recent || [],
+        cryptoBrl,
+        cryptoData,
+      };
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 2, // 2 minutos de cache
+  });
+
+  const totalBalance = dashboardData?.totalBalance || 0;
+  const currentBill = dashboardData?.currentBill || 0;
+  const monthIncome = dashboardData?.monthIncome || 0;
+  const monthExpense = dashboardData?.monthExpense || 0;
+  const monthlyIncome = dashboardData?.monthlyIncome || 0;
+  const recentTransactions = dashboardData?.recentTransactions || [];
+  const expensesByCategory = dashboardData?.expensesByCategory || [];
+  const cryptoBrl = dashboardData?.cryptoBrl || 0;
+  const cryptoData = dashboardData?.cryptoData || null;
 
   const handleSimulateDCA = (amount: number) => {
     setSimulatorSavings(amount);
     setSimulatorOpen(true);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
-        <div className="animate-pulse text-muted-foreground font-medium">Carregando...</div>
+        <div className="animate-pulse text-muted-foreground font-medium">Carregando dados...</div>
       </div>
     );
   }
@@ -169,10 +186,11 @@ const Dashboard = () => {
             size="icon"
             variant="outline"
             className="rounded-full h-10 w-10"
-            onClick={() => { setLoading(true); loadDashboardData(); }}
+            onClick={() => refetch()}
+            disabled={isFetching}
             aria-label="Atualizar dashboard"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
           </Button>
           <Button
             size="icon"
@@ -291,16 +309,14 @@ const Dashboard = () => {
             return ((eth.equity * eth.priceUsdt) / cryptoData.totalEquity) * 100;
           })(),
           ethExposureTotal: (() => {
-            const eth = cryptoData?.assets.find(a => a.currency === 'ETH');
             const total = totalBalance + cryptoBrl;
-            if (!eth || total <= 0) return 0;
-            return (eth.valueBrl / total) * 100;
+            if (total <= 0) return 0;
+            const eth = cryptoData?.assets.find(a => a.currency === 'ETH');
+            return eth ? (eth.valueBrl / total) * 100 : 0;
           })(),
           ethLimit: Number(localStorage.getItem('eth_exposure_limit') || '30'),
           isOverLimit: (() => {
-            const eth = cryptoData?.assets.find(a => a.currency === 'ETH');
-            if (!eth || !cryptoData?.totalEquity) return false;
-            const exposure = ((eth.equity * eth.priceUsdt) / cryptoData.totalEquity) * 100;
+            const exposure = getAssetConcentration(cryptoData?.assets, 'ETH', cryptoData?.totalEquity || 0);
             return exposure > Number(localStorage.getItem('eth_exposure_limit') || '30');
           })(),
           monthlyIncome,
@@ -308,13 +324,7 @@ const Dashboard = () => {
         }}
       />
 
-      {/* Scenario Simulator trigger card + modal */}
-      <ScenarioSimulator
-        cryptoData={cryptoData}
-        fiatBalance={totalBalance}
-      />
-
-      {/* Controlled simulator modal (from savings challenge) */}
+      {/* Scenario Simulator Modal & Trigger */}
       <ScenarioSimulator
         cryptoData={cryptoData}
         fiatBalance={totalBalance}

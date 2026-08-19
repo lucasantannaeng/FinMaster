@@ -87,9 +87,9 @@ serve(async (req) => {
       }
     } catch { /* sem body */ }
 
-    const apiKey = bodyData.apiKey || Deno.env.get(`OKX_API_KEY_${userId}`) || Deno.env.get("OKX_API_KEY");
-    const secretKey = bodyData.secretKey || Deno.env.get(`OKX_SECRET_KEY_${userId}`) || Deno.env.get("OKX_SECRET_KEY");
-    const passphrase = bodyData.passphrase || Deno.env.get(`OKX_PASSPHRASE_${userId}`) || Deno.env.get("OKX_PASSPHRASE");
+    const apiKey = bodyData.apiKey || Deno.env.get(`OKX_API_KEY_${userId}`);
+    const secretKey = bodyData.secretKey || Deno.env.get(`OKX_SECRET_KEY_${userId}`);
+    const passphrase = bodyData.passphrase || Deno.env.get(`OKX_PASSPHRASE_${userId}`);
 
     if (!apiKey || !secretKey || !passphrase) {
       return new Response(
