@@ -81,16 +81,22 @@ const AIConsultantDialog = ({ open, onOpenChange, portfolioContext, initialMessa
     const accessToken = session?.access_token;
     if (!accessToken) throw new Error('Você precisa estar logado para usar o consultor.');
 
+    const customApiKey = typeof window !== 'undefined' ? localStorage.getItem('CUSTOM_AI_API_KEY') : null;
+    const customProvider = typeof window !== 'undefined' ? localStorage.getItem('CUSTOM_AI_PROVIDER') : null;
+    const customSupabaseKey = typeof window !== 'undefined' ? localStorage.getItem('CUSTOM_SUPABASE_ANON_KEY') : null;
+
     const resp = await fetch(CHAT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        apikey: customSupabaseKey || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'placeholder-key',
       },
       body: JSON.stringify({
         messages: allMessages,
         portfolioContext,
+        customApiKey,
+        customProvider,
       }),
     });
 

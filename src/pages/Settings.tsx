@@ -253,8 +253,244 @@ const Settings = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Supabase Connection Setup (Para quem clonar o repositório) */}
+      <SupabaseConfigCard />
+
+      {/* AI Consultant Keys (Gemini, OpenAI, Groq, OpenRouter) */}
+      <AIConfigCard />
+
+      {/* OKX API Credentials */}
+      <OKXConfigCard />
     </div>
   );
 };
 
+const SupabaseConfigCard = () => {
+  const [supabaseUrl, setSupabaseUrl] = useState(() => localStorage.getItem('CUSTOM_SUPABASE_URL') || import.meta.env.VITE_SUPABASE_URL || '');
+  const [supabaseKey, setSupabaseKey] = useState(() => localStorage.getItem('CUSTOM_SUPABASE_ANON_KEY') || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '');
+  const [showKey, setShowKey] = useState(false);
+
+  const handleSave = () => {
+    if (!supabaseUrl.trim() || !supabaseKey.trim()) {
+      toast.error('Informe a URL e a Anon Key do Supabase');
+      return;
+    }
+    localStorage.setItem('CUSTOM_SUPABASE_URL', supabaseUrl.trim());
+    localStorage.setItem('CUSTOM_SUPABASE_ANON_KEY', supabaseKey.trim());
+    toast.success('Credenciais do Supabase salvas! Recarregando aplicação...');
+    setTimeout(() => window.location.reload(), 1000);
+  };
+
+  const handleReset = () => {
+    localStorage.removeItem('CUSTOM_SUPABASE_URL');
+    localStorage.removeItem('CUSTOM_SUPABASE_ANON_KEY');
+    setSupabaseUrl(import.meta.env.VITE_SUPABASE_URL || '');
+    setSupabaseKey(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '');
+    toast.info('Restaurado para variáveis de ambiente padrão.');
+    setTimeout(() => window.location.reload(), 1000);
+  };
+
+  return (
+    <Card className="shadow-sm border-brand-500/20">
+      <CardHeader className="pb-2 px-5">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <Link2 className="h-4 w-4 text-primary" />
+          Conexão Supabase (Banco de Dados & Auth)
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Permite que qualquer pessoa que clone o app use seu próprio projeto Supabase sem alterar o código.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-5 space-y-3 pt-2">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium">Supabase Project URL</Label>
+          <input
+            type="text"
+            className="w-full text-xs p-2.5 rounded-lg border border-input bg-background font-mono"
+            placeholder="https://xyzcompany.supabase.co"
+            value={supabaseUrl}
+            onChange={(e) => setSupabaseUrl(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium">Supabase Anon / Public Key</Label>
+          <div className="relative">
+            <input
+              type={showKey ? 'text' : 'password'}
+              className="w-full text-xs p-2.5 pr-10 rounded-lg border border-input bg-background font-mono"
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              value={supabaseKey}
+              onChange={(e) => setSupabaseKey(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowKey(!showKey)}
+              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+            >
+              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+        <div className="flex gap-2 pt-2">
+          <Button size="sm" onClick={handleSave} className="text-xs">
+            Salvar Conexão
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleReset} className="text-xs">
+            Restaurar Padrão
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const AIConfigCard = () => {
+  const [provider, setProvider] = useState(() => localStorage.getItem('CUSTOM_AI_PROVIDER') || 'gemini');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('CUSTOM_AI_API_KEY') || '');
+  const [showKey, setShowKey] = useState(false);
+
+  const handleSave = () => {
+    localStorage.setItem('CUSTOM_AI_PROVIDER', provider);
+    if (apiKey.trim()) {
+      localStorage.setItem('CUSTOM_AI_API_KEY', apiKey.trim());
+      toast.success('Chave de IA configurada com sucesso!');
+    } else {
+      localStorage.removeItem('CUSTOM_AI_API_KEY');
+      toast.info('Provedor salvo. Usando chave padrão da Edge Function.');
+    }
+  };
+
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="pb-2 px-5">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <Coins className="h-4 w-4 text-primary" />
+          Consultor Financeiro IA (Chaves de API)
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Configure seu provedor de IA preferido para o FinMaster AI.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-5 space-y-3 pt-2">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium">Provedor de IA</Label>
+          <select
+            value={provider}
+            onChange={(e) => setProvider(e.target.value)}
+            className="w-full text-xs p-2.5 rounded-lg border border-input bg-background"
+          >
+            <option value="gemini">Google Gemini (Oficial / Gratuito)</option>
+            <option value="groq">Groq (Ultra-rápido Llama 3)</option>
+            <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+            <option value="openrouter">OpenRouter (Multi-modelos)</option>
+          </select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium">Chave de API (Opcional - Sobrescreve padrão)</Label>
+          <div className="relative">
+            <input
+              type={showKey ? 'text' : 'password'}
+              className="w-full text-xs p-2.5 pr-10 rounded-lg border border-input bg-background font-mono"
+              placeholder="Cole sua API Key (ex: AIzaSy..., gsk_..., sk-...)"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowKey(!showKey)}
+              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+            >
+              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+        <Button size="sm" onClick={handleSave} className="text-xs">
+          Salvar Configurações de IA
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+const OKXConfigCard = () => {
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('OKX_API_KEY') || '');
+  const [secretKey, setSecretKey] = useState(() => localStorage.getItem('OKX_SECRET_KEY') || '');
+  const [passphrase, setPassphrase] = useState(() => localStorage.getItem('OKX_PASSPHRASE') || '');
+  const [showKeys, setShowKeys] = useState(false);
+
+  const handleSave = () => {
+    if (apiKey.trim()) localStorage.setItem('OKX_API_KEY', apiKey.trim());
+    else localStorage.removeItem('OKX_API_KEY');
+
+    if (secretKey.trim()) localStorage.setItem('OKX_SECRET_KEY', secretKey.trim());
+    else localStorage.removeItem('OKX_SECRET_KEY');
+
+    if (passphrase.trim()) localStorage.setItem('OKX_PASSPHRASE', passphrase.trim());
+    else localStorage.removeItem('OKX_PASSPHRASE');
+
+    toast.success('Credenciais da OKX salvas localmente com sucesso!');
+  };
+
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="pb-2 px-5">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <Coins className="h-4 w-4 text-primary" />
+          Integração CEX (OKX Exchange)
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Permite sincronizar saldos de criptomoedas da sua conta OKX (somente leitura).
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-5 space-y-3 pt-2">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium">OKX API Key</Label>
+          <input
+            type={showKeys ? 'text' : 'password'}
+            className="w-full text-xs p-2.5 rounded-lg border border-input bg-background font-mono"
+            placeholder="Sua API Key OKX"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium">OKX Secret Key</Label>
+          <input
+            type={showKeys ? 'text' : 'password'}
+            className="w-full text-xs p-2.5 rounded-lg border border-input bg-background font-mono"
+            placeholder="Sua Secret Key OKX"
+            value={secretKey}
+            onChange={(e) => setSecretKey(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium">OKX Passphrase</Label>
+          <input
+            type={showKeys ? 'text' : 'password'}
+            className="w-full text-xs p-2.5 rounded-lg border border-input bg-background font-mono"
+            placeholder="Sua Passphrase OKX"
+            value={passphrase}
+            onChange={(e) => setPassphrase(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <Button size="sm" onClick={handleSave} className="text-xs">
+            Salvar Chaves OKX
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowKeys(!showKeys)}
+            className="text-xs text-muted-foreground"
+          >
+            {showKeys ? 'Ocultar Chaves' : 'Visualizar Chaves'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 export default Settings;
+
