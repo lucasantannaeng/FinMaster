@@ -11,6 +11,10 @@ jobs:
     name: TypeCheck, Lint & Tests
     runs-on: ubuntu-latest
 
+    env:
+      VITE_SUPABASE_URL: "https://placeholder-finmaster.supabase.co"
+      VITE_SUPABASE_PUBLISHABLE_KEY: "placeholder-anon-key"
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -22,7 +26,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Run Vitest Suite
         run: npm test
