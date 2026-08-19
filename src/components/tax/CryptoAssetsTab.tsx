@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
+import { fetchOkxBalance } from '@/lib/okx';
 import { Coins, AlertTriangle, Copy, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,7 +38,7 @@ export default function CryptoAssetsTab({ year }: Props) {
     if (!user) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('get-okx-balance');
+      const { data, error } = await fetchOkxBalance();
       if (error) throw error;
       if (!data || typeof data !== 'object' || data.error) {
         setCryptoData(null);

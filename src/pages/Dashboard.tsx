@@ -10,6 +10,7 @@ import InfoButton from '@/components/InfoButton';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import CryptoCard from '@/components/CryptoCard';
+import { fetchOkxBalance } from '@/lib/okx';
 
 import ExpenseByCategoryChart from '@/components/dashboard/ExpenseByCategoryChart';
 import AssetAllocationChart from '@/components/dashboard/AssetAllocationChart';
@@ -127,7 +128,7 @@ const Dashboard = () => {
       let cryptoBrl = 0;
       let cryptoData: OkxData | null = null;
       try {
-        const { data: cryptoResult } = await supabase.functions.invoke('get-okx-balance');
+        const { data: cryptoResult } = await fetchOkxBalance();
         if (cryptoResult?.totalBrl) {
           cryptoBrl = cryptoResult.totalBrl;
           cryptoData = cryptoResult;

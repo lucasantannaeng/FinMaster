@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Coins, RefreshCw, AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import InfoButton from '@/components/InfoButton';
 import { formatCurrency } from '@/lib/format';
+import { fetchOkxBalance } from '@/lib/okx';
 
 interface CryptoAsset {
   currency: string;
@@ -44,7 +45,7 @@ const CryptoCard = () => {
     else setLoading(true);
     setError(null);
     try {
-      const { data: result, error: fnError } = await supabase.functions.invoke('get-okx-balance');
+      const { data: result, error: fnError } = await fetchOkxBalance();
       if (fnError) throw fnError;
       if (!result || typeof result !== 'object') {
         throw new Error('Saldo indisponível no momento');

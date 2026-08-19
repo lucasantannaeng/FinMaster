@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchOkxBalance } from '@/lib/okx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,7 +45,7 @@ const DCAPerformanceCard = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data: result, error: fnError } = await supabase.functions.invoke('get-okx-balance');
+      const { data: result, error: fnError } = await fetchOkxBalance();
       if (fnError) throw fnError;
       if (result?.error) throw new Error(result.details || result.error);
       setData(result);

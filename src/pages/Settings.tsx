@@ -440,7 +440,7 @@ const OKXConfigCard = () => {
           Integração CEX (OKX Exchange)
         </CardTitle>
         <CardDescription className="text-xs">
-          Permite sincronizar saldos de criptomoedas da sua conta OKX (somente leitura).
+          Permite sincronizar saldos de criptomoedas da sua conta OKX (somente leitura). Se você já configurou as chaves nos Secrets do Supabase (<code>OKX_API_KEY</code>, <code>OKX_SECRET_KEY</code>, <code>OKX_PASSPHRASE</code>), elas são detectadas automaticamente. Os campos abaixo são opcionais para sobrescrita local.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-5 space-y-3 pt-2">
