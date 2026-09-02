@@ -1,4 +1,4 @@
-project_id = "peiwulcxpihozgcmbgua"
+project_id = "your-supabase-project-id"
 
 [functions.parse-transaction]
 verify_jwt = false
