@@ -13,6 +13,7 @@ dist/
 dist-ssr/
 build/
 out/
+release/
 
 # Logs & Debug
 logs

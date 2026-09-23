@@ -20,10 +20,8 @@ export default function Trust() {
       <Helmet>
         <title>Confiança e Privacidade — FinMaster</title>
         <meta name="description" content="Como o FinMaster protege seus dados: autenticação Supabase, isolamento por usuário via Row-Level Security e contato de segurança." />
-        <link rel="canonical" href="https://pocket-fin-control.lovable.app/trust" />
         <meta property="og:title" content="Confiança e Privacidade — FinMaster" />
         <meta property="og:description" content="Como o FinMaster protege seus dados e isola informações por usuário." />
-        <meta property="og:url" content="https://pocket-fin-control.lovable.app/trust" />
       </Helmet>
       <div className="max-w-3xl mx-auto space-y-5">
         <div>
@@ -45,7 +43,7 @@ export default function Trust() {
         </div>
 
         <Section icon={Lock} title="Autenticação e acesso">
-          <p>O acesso à aplicação requer login com email e senha gerenciados pelo Supabase Auth.</p>
+          <p>O acesso à aplicação requer autenticação segura gerenciada pelo Supabase Auth (Email, Senha ou Google OAuth).</p>
           <p>Cada usuário acessa exclusivamente os próprios dados; a separação é aplicada no backend por políticas de Row-Level Security baseadas em <code>auth.uid()</code>.</p>
         </Section>
 
@@ -55,8 +53,8 @@ export default function Trust() {
           <p>Integrações opcionais (ex.: OKX) usam chaves fornecidas pelo usuário e armazenadas como segredos no servidor — nunca no navegador.</p>
         </Section>
 
-        <Section icon={Shield} title="Plataforma e responsabilidade compartilhada">
-          <p>A aplicação é hospedada pela Lovable e usa Supabase como backend. A Lovable fornece a infraestrutura; o proprietário deste app é responsável pela configuração, políticas de acesso e conteúdo.</p>
+        <Section icon={Shield} title="Plataforma e arquitetura multiplataforma">
+          <p>A aplicação opera como solução autônoma multiplataforma (Desktop Windows, Android e Web) utilizando Supabase como backend centralizado. Todos os dados são sincronizados em nuvem sob rígido isolamento criptográfico e regras de RLS.</p>
           <p>Esta página descreve apenas controles atualmente habilitados na aplicação. Não constitui declaração de conformidade regulatória.</p>
         </Section>
 

@@ -1,11 +1,16 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppSettingsProvider } from "@/hooks/useAppSettings";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { App as CapApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
+import { supabase } from '@/integrations/supabase/client';
 import AppLayout from "@/components/AppLayout";
 import PageSkeleton from "@/components/PageSkeleton";
 
@@ -22,13 +27,79 @@ const Install = lazy(() => import('./pages/Install'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const Trust = lazy(() => import('./pages/Trust'));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2, // 2 minutos
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const NativeDeepLinkHandler = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const listenerPromise = CapApp.addListener('appUrlOpen', async ({ url }) => {
+      try {
+        await Browser.close().catch(() => {});
+      } catch {}
+
+      if (url && (url.includes('login-callback') || url.includes('access_token') || url.includes('code='))) {
+        const hashPart = url.split('#')[1];
+        if (hashPart) {
+          const params = new URLSearchParams(hashPart);
+          const access_token = params.get('access_token');
+          const refresh_token = params.get('refresh_token');
+          if (access_token && refresh_token) {
+            const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+            if (!error) {
+              navigate('/', { replace: true });
+              return;
+            }
+          }
+        }
+
+        const queryPart = url.split('?')[1]?.split('#')[0];
+        if (queryPart) {
+          const params = new URLSearchParams(queryPart);
+          const code = params.get('code');
+          if (code) {
+            const { error } = await supabase.auth.exchangeCodeForSession(code);
+            if (!error) {
+              navigate('/', { replace: true });
+              return;
+            }
+          }
+        }
+      }
+    });
+
+    return () => {
+      listenerPromise.then(handler => handler.remove()).catch(() => {});
+    };
+  }, [navigate]);
+
+  return null;
+};
+
+const RealtimeSyncManager = () => {
+  useRealtimeSync();
+  return null;
+};
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center min-h-screen bg-background"><div className="animate-pulse text-muted-foreground">Carregando...</div></div>;
   if (!user) return <Navigate to="/auth" replace />;
-  return <AppLayout>{children}</AppLayout>;
+  return (
+    <>
+      <RealtimeSyncManager />
+      <AppLayout>{children}</AppLayout>
+    </>
+  );
 };
 
 const AuthRoute = ({ children }: { children: React.ReactNode }) => {
@@ -44,8 +115,9 @@ const App = () => (
       <AppSettingsProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <HashRouter>
           <AuthProvider>
+            <NativeDeepLinkHandler />
             <Suspense fallback={<PageSkeleton />}>
               <Routes>
                 <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
@@ -63,7 +135,7 @@ const App = () => (
               </Routes>
             </Suspense>
           </AuthProvider>
-        </BrowserRouter>
+        </HashRouter>
       </AppSettingsProvider>
     </TooltipProvider>
   </QueryClientProvider>

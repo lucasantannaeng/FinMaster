@@ -9,10 +9,8 @@ const InstallHead = () => (
   <Helmet>
     <title>Instalar o FinMaster no celular — PWA Android e iOS</title>
     <meta name="description" content="Instale o FinMaster como aplicativo (PWA) no seu Android ou iPhone para acesso rápido ao controle financeiro." />
-    <link rel="canonical" href="https://pocket-fin-control.lovable.app/install" />
     <meta property="og:title" content="Instalar o FinMaster no celular" />
     <meta property="og:description" content="Instale o FinMaster como app no seu Android ou iPhone." />
-    <meta property="og:url" content="https://pocket-fin-control.lovable.app/install" />
   </Helmet>
 );
 

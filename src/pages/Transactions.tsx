@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { formatCurrency, formatDate, parseLocalDate } from '@/lib/format';
-import { Plus, TrendingUp, TrendingDown, ArrowLeftRight, Loader2, Pencil, Trash2, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, ArrowLeftRight, Loader2, Pencil, Trash2, ChevronLeft, ChevronRight, Search, X, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { transactionSchema, getUserFriendlyError } from '@/lib/validation';
 import SmartTransactionInput, { SmartTransactionInputHandle, saveCategoryOverride } from '@/components/SmartTransactionInput';
+import { uploadReceipt } from '@/services/receiptService';
 
 const emptyForm = {
   description: '',
@@ -31,6 +32,7 @@ const emptyForm = {
   split_enabled: false,
   split_contact_id: '',
   split_user_percent: '',
+  receipt_url: '',
 };
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -154,6 +156,7 @@ const Transactions = () => {
       split_enabled: false,
       split_contact_id: '',
       split_user_percent: '',
+      receipt_url: (tx as any).receipt_url || '',
     });
     setDialogOpen(true);
   };
@@ -251,6 +254,7 @@ const Transactions = () => {
           card_id: form.card_id || null,
           contact_id: form.contact_id || null,
           is_paid: form.is_paid,
+          receipt_url: form.receipt_url || null,
         }).eq('id', editingTx.id);
         if (error) throw error;
 
@@ -304,6 +308,7 @@ const Transactions = () => {
           is_paid: form.is_paid,
           recurring_group_id: recurringGroupId,
           recurrence: recurrence,
+          receipt_url: form.receipt_url || null,
         };
 
         const txsToInsert = [];
@@ -784,6 +789,40 @@ const Transactions = () => {
                 </label>
               </div>
             )}
+            <div className="space-y-1.5 pt-1 border-t border-border/50">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium">Comprovante Fiscal (Opcional)</Label>
+                {form.receipt_url && (
+                  <button
+                    type="button"
+                    className="text-primary hover:underline text-[11px] font-medium"
+                    onClick={() => window.open(form.receipt_url, '_blank')}
+                  >
+                    Ver comprovante
+                  </button>
+                )}
+              </div>
+              <Input
+                type="file"
+                accept="image/*,application/pdf"
+                className="text-xs h-9 cursor-pointer file:mr-2 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-xs file:bg-primary/10 file:text-primary"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file && user?.id) {
+                    const toastId = toast.loading('Enviando comprovante...');
+                    const { url, error } = await uploadReceipt(file, user.id);
+                    toast.dismiss(toastId);
+                    if (url) {
+                      setForm(f => ({ ...f, receipt_url: url }));
+                      toast.success('Comprovante anexado com sucesso!');
+                    } else {
+                      toast.error(error || 'Erro ao enviar comprovante.');
+                    }
+                  }
+                }}
+              />
+            </div>
+
             <Button type="submit" className="w-full" disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar'}
             </Button>
@@ -821,6 +860,17 @@ const Transactions = () => {
                   <span className={`text-sm font-semibold ${tx.type === 'income' ? 'text-primary' : 'text-destructive'}`}>
                     {d ? '••••' : `${tx.type === 'income' ? '+' : '-'}${formatCurrency(Number(tx.amount))}`}
                   </span>
+                  {(tx as any).receipt_url && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-primary hover:text-primary/80"
+                      title="Ver Comprovante Anexo"
+                      onClick={() => window.open((tx as any).receipt_url, '_blank')}
+                    >
+                      <Receipt className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(tx)}>
                     <Pencil className="h-3 w-3" />
                   </Button>
