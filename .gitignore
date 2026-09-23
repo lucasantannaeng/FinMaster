@@ -120,3 +120,10 @@ pnpm-debug.log*
 *.7z
 *.tar.gz
 *.rar
+
+# FinMaster Encrypted Vaults & Local Databases (SEC-01)
+*.enc
+*.finmaster.enc
+*.db
+*.sqlite
+*.sqlite3

@@ -28,6 +28,7 @@ import { useAppSettings } from '@/hooks/useAppSettings';
 import { useAppLock } from '@/hooks/useAppLock';
 import { SecurityVaultDialogs } from '@/components/settings/SecurityVaultDialogs';
 import SubscriptionAlerts from '@/components/settings/SubscriptionAlerts';
+import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/secureStorage';
 
 const Settings = () => {
   const { discreteMode, setDiscreteMode, baseCurrency, setBaseCurrency } = useAppSettings();
@@ -564,16 +565,28 @@ const SupabaseConfigCard = () => {
 
 const AIConfigCard = () => {
   const [provider, setProvider] = useState(() => localStorage.getItem('CUSTOM_AI_PROVIDER') || 'gemini');
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('CUSTOM_AI_API_KEY') || '');
+  const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
 
-  const handleSave = () => {
+  useEffect(() => {
+    let mounted = true;
+    getSecureItem('CUSTOM_AI_API_KEY').then(val => {
+      if (mounted && val) setApiKey(val);
+      else if (mounted) {
+        const legacy = localStorage.getItem('CUSTOM_AI_API_KEY');
+        if (legacy) setApiKey(legacy);
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  const handleSave = async () => {
     localStorage.setItem('CUSTOM_AI_PROVIDER', provider);
     if (apiKey.trim()) {
-      localStorage.setItem('CUSTOM_AI_API_KEY', apiKey.trim());
-      toast.success('Chave de IA configurada com sucesso!');
+      await setSecureItem('CUSTOM_AI_API_KEY', apiKey.trim());
+      toast.success('Chave de IA configurada com criptografia AES-256!');
     } else {
-      localStorage.removeItem('CUSTOM_AI_API_KEY');
+      removeSecureItem('CUSTOM_AI_API_KEY');
       toast.info('Provedor salvo. Usando chave padrão da Edge Function.');
     }
   };
@@ -587,7 +600,7 @@ const AIConfigCard = () => {
             Inteligência Artificial & Chaves (BYOK)
           </CardTitle>
           <Badge variant={apiKey ? "default" : "outline"} className="text-[10px]">
-            {apiKey ? "BYOK Ativo" : "Nuvem Padronizada"}
+            {apiKey ? "BYOK Criptografado (AES-256)" : "Nuvem Padronizada"}
           </Badge>
         </div>
         <CardDescription className="text-xs">
@@ -609,7 +622,7 @@ const AIConfigCard = () => {
           </select>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs font-medium">Chave de API (Opcional - Sobrescreve padrão)</Label>
+          <Label className="text-xs font-medium">Chave de API (Criptografada localmente)</Label>
           <div className="relative">
             <input
               type={showKey ? 'text' : 'password'}
@@ -637,7 +650,7 @@ const AIConfigCard = () => {
               variant="outline"
               onClick={() => {
                 setApiKey('');
-                localStorage.removeItem('CUSTOM_AI_API_KEY');
+                removeSecureItem('CUSTOM_AI_API_KEY');
                 toast.info('Chave removida. Restaurado para chave padrão do servidor.');
               }}
               className="text-xs text-destructive hover:bg-destructive/10"
@@ -652,22 +665,49 @@ const AIConfigCard = () => {
 };
 
 const OKXConfigCard = () => {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('OKX_API_KEY') || '');
-  const [secretKey, setSecretKey] = useState(() => localStorage.getItem('OKX_SECRET_KEY') || '');
-  const [passphrase, setPassphrase] = useState(() => localStorage.getItem('OKX_PASSPHRASE') || '');
+  const [apiKey, setApiKey] = useState('');
+  const [secretKey, setSecretKey] = useState('');
+  const [passphrase, setPassphrase] = useState('');
   const [showKeys, setShowKeys] = useState(false);
 
-  const handleSave = () => {
-    if (apiKey.trim()) localStorage.setItem('OKX_API_KEY', apiKey.trim());
-    else localStorage.removeItem('OKX_API_KEY');
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      getSecureItem('OKX_API_KEY'),
+      getSecureItem('OKX_SECRET_KEY'),
+      getSecureItem('OKX_PASSPHRASE'),
+    ]).then(([k, s, p]) => {
+      if (!mounted) return;
+      if (k) setApiKey(k);
+      else {
+        const legacyK = localStorage.getItem('OKX_API_KEY');
+        if (legacyK) setApiKey(legacyK);
+      }
+      if (s) setSecretKey(s);
+      else {
+        const legacyS = localStorage.getItem('OKX_SECRET_KEY');
+        if (legacyS) setSecretKey(legacyS);
+      }
+      if (p) setPassphrase(p);
+      else {
+        const legacyP = localStorage.getItem('OKX_PASSPHRASE');
+        if (legacyP) setPassphrase(legacyP);
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
 
-    if (secretKey.trim()) localStorage.setItem('OKX_SECRET_KEY', secretKey.trim());
-    else localStorage.removeItem('OKX_SECRET_KEY');
+  const handleSave = async () => {
+    if (apiKey.trim()) await setSecureItem('OKX_API_KEY', apiKey.trim());
+    else removeSecureItem('OKX_API_KEY');
 
-    if (passphrase.trim()) localStorage.setItem('OKX_PASSPHRASE', passphrase.trim());
-    else localStorage.removeItem('OKX_PASSPHRASE');
+    if (secretKey.trim()) await setSecureItem('OKX_SECRET_KEY', secretKey.trim());
+    else removeSecureItem('OKX_SECRET_KEY');
 
-    toast.success('Credenciais da OKX salvas localmente com sucesso!');
+    if (passphrase.trim()) await setSecureItem('OKX_PASSPHRASE', passphrase.trim());
+    else removeSecureItem('OKX_PASSPHRASE');
+
+    toast.success('Credenciais da OKX salvas com criptografia AES-256!');
   };
 
   return (

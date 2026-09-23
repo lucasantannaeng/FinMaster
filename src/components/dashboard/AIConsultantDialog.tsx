@@ -6,6 +6,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Bot, Send, User, Sparkles, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { sanitizeHtml } from '@/lib/sanitize';
+import { getSecureItem } from '@/lib/secureStorage';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
@@ -88,7 +90,9 @@ const AIConsultantDialog = ({ open, onOpenChange, portfolioContext, initialMessa
     const accessToken = session?.access_token;
     if (!accessToken) throw new Error('Você precisa estar logado para usar o consultor.');
 
-    const customApiKey = typeof window !== 'undefined' ? localStorage.getItem('CUSTOM_AI_API_KEY') : null;
+    const customApiKey = typeof window !== 'undefined'
+      ? (await getSecureItem('CUSTOM_AI_API_KEY')) || localStorage.getItem('CUSTOM_AI_API_KEY')
+      : null;
     const customProvider = typeof window !== 'undefined' ? localStorage.getItem('CUSTOM_AI_PROVIDER') : null;
     const customSupabaseKey = typeof window !== 'undefined' ? localStorage.getItem('CUSTOM_SUPABASE_ANON_KEY') : null;
 
@@ -298,7 +302,7 @@ const AIConsultantDialog = ({ open, onOpenChange, portfolioContext, initialMessa
                 >
                   {msg.role === 'assistant' ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-xs [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:mb-1.5 [&_ul]:my-1 [&_li]:my-0.5 [&_strong]:text-foreground">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <ReactMarkdown>{sanitizeHtml(msg.content)}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-xs leading-relaxed">{msg.content}</p>

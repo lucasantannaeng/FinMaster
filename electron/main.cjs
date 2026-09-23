@@ -30,8 +30,9 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false,
-      allowRunningInsecureContent: true,
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
   });
 
@@ -55,6 +56,19 @@ function createWindow() {
   // Carrega a build estática do Vite
   const indexPath = path.join(__dirname, '../dist/index.html');
   mainWindow.loadFile(indexPath);
+
+  // Previne navegações remotas arbitrárias dentro do processo renderer (SEC-04)
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    try {
+      const parsedUrl = new URL(navigationUrl);
+      if (parsedUrl.protocol !== 'file:') {
+        event.preventDefault();
+        shell.openExternal(navigationUrl);
+      }
+    } catch (_) {
+      event.preventDefault();
+    }
+  });
 
   // Redireciona links externos para o navegador padrão do sistema
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
