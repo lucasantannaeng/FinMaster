@@ -31,6 +31,13 @@ interface PortfolioContext {
   isOverLimit: boolean;
   monthlyIncome?: number;
   monthExpense?: number;
+  totalCardDebt?: number;
+  burnRateMonths?: number | null;
+  topExpenseCategories?: Array<{
+    category: string;
+    amount: number;
+    percent: number;
+  }>;
 }
 
 interface Props {
@@ -207,10 +214,22 @@ const AIConsultantDialog = ({ open, onOpenChange, portfolioContext, initialMessa
   };
 
   const quickActions = [
-    { label: 'Estratégia de proteção', msg: 'Sugira estratégias para proteger meu lucro atual em ETH considerando minha exposição.' },
-    { label: 'Rebalancear portfólio', msg: 'Como posso rebalancear meu portfólio entre Fiat e Cripto de forma eficiente?' },
-    { label: 'Quando aportar?', msg: 'Considerando minha situação financeira atual, é um bom momento para aportar mais em cripto?' },
-    { label: 'Análise de risco', msg: 'Faça uma análise de risco do meu portfólio atual e sugira melhorias.' },
+    {
+      label: '📉 Quitação de dívidas',
+      msg: 'Analise minhas faturas de cartão e despesas mensais e elabore um plano de quitação de dívidas (comparando os métodos Bola de Neve e Avalanche) com cronograma estimado mês a mês e economia de juros.',
+    },
+    {
+      label: '💰 Simular aporte mensal',
+      msg: 'Com base no meu saldo fiduciário, renda, despesas e patrimônio atual, elabore uma sugestão de alocação de aportes mensais dividida entre Reserva de Emergência, Renda Fixa e Criptoativos.',
+    },
+    {
+      label: '⚖️ Rebalancear patrimônio',
+      msg: 'Avalie a distribuição atual do meu patrimônio entre Fiat (BRL) e Criptoativos. Indique desvios em relação à minha exposição e sugira um plano de rebalanceamento seguro.',
+    },
+    {
+      label: '🎯 Liberdade financeira',
+      msg: 'Com base no meu patrimônio total fiduciário e cripto e no meu custo de vida mensal (burn rate), calcule meu tempo estimado para atingir a independência financeira pela Regra dos 4%.',
+    },
   ];
 
   return (

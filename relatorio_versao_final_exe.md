@@ -1,48 +1,48 @@
-# 📦 Relatório de Release — FinMaster Desktop v1.1.0 & Mobile Android (Supabase Cloud Unificado)
+# 📦 Relatório de Release — FinMaster Desktop v1.2.0 & Mobile Android (Blindagem & IA Autoral)
 
-**Data da Compilação:** 23/09/2026 09:30 (Horário Local)  
-**Ambiente:** Windows 10/11 x64 (Electron 44.4.5, Node.js v24.12, Vite 5.4, React 18.3, Capacitor 8.5.1)  
+**Data da Compilação:** 23/09/2026 10:15 (Horário Local)  
+**Ambiente:** Windows 10/11 x64 (Electron 44.4.5, Node.js v24.12, Vite 5.4, React 18.3, Capacitor 8.5.1, TanStack Query v5)  
 **Autor:** Luca Rodrigues Gomes de Sant'Anna (`lucasantannaeng@gmail.com`)
 
 ---
 
 ## 🎯 Arquitetura & Melhorias Implementadas Nesta Release
 
-### 1. Desacoplamento Total e Definitivo da Lovable
-- Remoção do plugin `lovable-tagger` de `package.json` e `vite.config.ts`.
-- Higienização completa de metadados, links canônicos e tags OpenGraph em `index.html`, `Auth.tsx`, `Install.tsx` e `Trust.tsx`.
-- Configuração de `base: './'` no Vite, habilitando carregamento autônomo sem dependência de domínios externos ou infraestruturas proprietárias.
+### 1. Blindagem de Conectividade e Resiliência Multiplataforma
+- **`SingleInstanceLock` no Electron**: Injetado em `electron/main.cjs`. Previne abertura de múltiplas instâncias concorrentes de `FinMaster.exe`. Tentativas de abertura duplicada focam e restauram a janela ativa já existente e encerram o processo secundário imediatamente, eliminando disputas no `localStorage` e colisões de porta na porta local `54321`.
+- **Persistência Offline (*Stale-While-Revalidate*)**: Integrados `@tanstack/react-query-persist-client` e `@tanstack/query-sync-storage-persister` em `src/App.tsx`. O app armazena todas as queries de saldo, transações, faturas e orçamentos no `localStorage` com TTL de 24h. Na ausência de sinal de internet (ou modo avião), o app inicializa instantaneamente em modo leitura sem telas em branco.
+- **Auto-Healing de WebSocket & Monitor de Rede**: Implementado em `src/hooks/useRealtimeSync.tsx`. Escuta eventos de status do canal (`SUBSCRIBED`, `TIMED_OUT`, `CHANNEL_ERROR`, `CLOSED`) com tentativa exponencial de reconexão. Ao detectar o retorno da conectividade via ouvinte `online` do navegador, invalida automaticamente todas as queries do cache, forçando a reconciliação transparente de dados entre Desktop e Mobile.
+- **Pílula de Sincronização em Tempo Real (`SyncStatusPill`)**: Exibida no cabeçalho de todas as telas em `src/components/AppLayout.tsx`:
+  - 🟢 **Sincronizado** (Ponto pulsante verde indicando canal WebSocket ativo com Supabase)
+  - 🟡 **Reconectando** (Ícone rotativo indicando recuperação de conexão)
+  - ⚪ **Offline** (Aviso de operação sobre cache local persistido, com clique para forçar sincronização)
 
-### 2. Roteamento Híbrido Resiliente (`HashRouter`) & Deep Linking
-- Migração de `BrowserRouter` para `HashRouter` em `src/App.tsx`. Isso elimina quaisquer erros 404 ao recarregar a tela ou navegar rotas internas dentro do protocolo de arquivos locais (`file://`) no Electron e no webview do Android (`capacitor://`).
-- Inclusão do `NativeDeepLinkHandler` via `@capacitor/app` e `@capacitor/browser`: escuta o esquema customizado `com.autorais.finmaster://login-callback` e processa sessões retornadas por autenticação externa de forma transparente.
+### 2. Autopreenchimento Inteligente de Comprovantes por IA (OCR + Auto-Fill)
+- **Fluxo Integrado no Formulário de Transações** (`src/pages/Transactions.tsx`):
+  - Ao anexar uma foto ou PDF no campo de comprovante fiscal, o sistema executa simultaneamente:
+    1. Upload seguro para o bucket `receipts` no Supabase Storage via `src/services/receiptService.ts`.
+    2. Conversão e envio do arquivo para a Edge Function `parse-transaction`.
+  - A IA extrai e preenche automaticamente os campos: **Descrição**, **Valor (R$)**, **Data** e **Categoria**.
+  - **Feedback Visual com Destaque**: Cada campo identificado recebe um badge visual sutil `✨ IA`, permitindo que o usuário identifique os campos preenchidos, ajuste qualquer detalhe e salve com 1 clique.
 
-### 3. Autenticação Multiplataforma (Google OAuth + Email/Senha)
-- Serviço unificado `src/services/authService.ts`:
-  - **No Desktop Windows (.exe)**: Inicia um servidor HTTP local efêmero na porta `54321` (`start-desktop-oauth`), abre o navegador padrão do sistema para login seguro no Google e intercepta o callback via loopback em `http://127.0.0.1:54321/callback`, injetando os tokens no Supabase com segurança.
-  - **No Mobile Android**: Abre o Chrome Custom Tabs via `@capacitor/browser` e redireciona para `com.autorais.finmaster://login-callback`.
-  - **Na Web**: Redirecionamento padrão para `window.location.origin`.
-- Botão "Continuar com o Google" integrado visualmente na tela de login `src/pages/Auth.tsx`.
+### 3. Lançamento Global Rápido por Voz (Audio-to-Transaction)
+- **Componente Autoral `src/components/GlobalVoiceInput.tsx`**:
+  - Disponibiliza entrada por voz no Header do Desktop e como Floating Action Button (FAB) no Mobile.
+  - Transcrição em tempo real em português brasileiro via Web Speech API (`pt-BR`).
+  - Interpretação semântica de frases complexas como *"Almoço 45 reais no débito hoje"* via IA.
+  - Exibição de modal rápido de revisão e confirmação da transação com inserção direta no banco e atualização automática de saldos.
+- **Permissões Nativas no Android**: Adicionadas `android.permission.RECORD_AUDIO`, `android.permission.MODIFY_AUDIO_SETTINGS` e `android.permission.CAMERA` em `android/app/src/main/AndroidManifest.xml` e sincronizadas via Capacitor.
 
-### 4. Sincronização em Tempo Real (Supabase Realtime)
-- Hook `src/hooks/useRealtimeSync.ts` acoplado ao ciclo autenticado do app:
-  - Assina o canal WebSocket `realtime-user-<id>` nas tabelas `transactions`, `accounts`, `credit_cards` e `categories`.
-  - Ao lançar uma transação pelo celular na rua, o painel do Desktop no computador atualiza instantaneamente seus saldos, faturas e gráficos analíticos sem necessidade de pressionar F5.
-
-### 5. Persistência e Armazenamento Seguro de Comprovantes
-- Script de segurança e migração oficial `supabase_security_setup.sql`:
-  - Adiciona coluna `receipt_url text` na tabela `transactions`.
-  - Provisiona o bucket `receipts` no Supabase Storage com políticas de RLS isoladas por usuário (`auth.uid()`).
-- Módulo `src/services/receiptService.ts`:
-  - Upload automático de fotos e PDFs para `receipts/<user_id>/<timestamp>_<filename>`.
-  - Visualizador direto integrado nas linhas da tabela de transações (`src/pages/Transactions.tsx`) via ícone de comprovante.
-
-### 6. Otimização de Performance e Chunk Splitting no Vite
-- Divisão inteligente de bundles pesados em `vite.config.ts`:
-  - Chunk isolado para `recharts` (410 kB).
-  - Chunk isolado para primitivos Radix UI (217 kB).
-  - Redução drástica do chunk do Dashboard de **595 kB** para **185 kB**.
-  - Tempo total de compilação reduzido de 33.6s para **16.1s** (mais de 50% de ganho de velocidade).
+### 4. Evolução do Consultor Financeiro (AI Consultant v2)
+- **Contexto Patrimonial Expandido**:
+  - Injeção de dívidas e faturas abertas de cartão de crédito (`totalCardDebt`), taxa de queima líquida mensal (`burnRateMonths`) e categorias com maior consumo (`topExpenseCategories`) em `src/components/dashboard/AIConsultantDialog.tsx` e `src/pages/Dashboard.tsx`.
+- **Especialidades de Engenharia Financeira** em `supabase/functions/ai-consultant/index.ts`:
+  - 📉 **Plano de Quitação de Dívidas**: Comparativo entre os métodos Bola de Neve e Avalanche, com projeção de economia de juros e cronograma mês a mês.
+  - 💰 **Simulação de Aportes Mensais**: Alocação equilibrada entre Reserva de Emergência, Renda Fixa e Criptoativos.
+  - ⚖️ **Rebalanceamento Patrimonial**: Ajustes de concentração fiduciária vs cripto e limites de exposição em ETH.
+  - 🎯 **Independência Financeira**: Estimativa temporal via Regra dos 4% baseada no custo de vida real do usuário.
+- **Gerenciamento Seguro de Chaves (Arquitetura Híbrida / BYOK)**:
+  - Seção aprimorada em `src/pages/Settings.tsx` com seletor de provedor (Gemini gratuito, Groq, OpenAI, OpenRouter), badge de status (`Nuvem Padronizada` vs `BYOK Ativo`) e botão de restauração rápida para as credenciais padrão do servidor.
 
 ---
 
@@ -50,8 +50,8 @@
 
 | Arquivo / Pacote | Tipo | Tamanho | Caminho Absoluto |
 |---|---|---|---|
-| ⚡ **`FinMaster.exe`** | Executável Standalone Desktop (x64) | **234,68 MB** | `D:\Projetos\1.Autorais\FinMaster\release\win-unpacked\FinMaster.exe` |
-| 🗜️ **`FinMaster-v1.1.0-win-x64.zip`** | Pacote Portátil Compactado (ZIP) | **152,28 MB** | `D:\Projetos\1.Autorais\FinMaster\release\FinMaster-v1.1.0-win-x64.zip` |
+| ⚡ **`FinMaster.exe`** | Executável Standalone Desktop (x64) | **234,68 MB** (246.085.120 bytes) | `D:\Projetos\1.Autorais\FinMaster\release\win-unpacked\FinMaster.exe` |
+| 🗜️ **`FinMaster-v1.1.0-win-x64.zip`** | Pacote Portátil Compactado (ZIP) | **152,28 MB** (159.680.671 bytes) | `D:\Projetos\1.Autorais\FinMaster\release\FinMaster-v1.1.0-win-x64.zip` |
 | 📱 **Projeto Android Nativo** | Estrutura Gradle & Capacitor Sync | — | `D:\Projetos\1.Autorais\FinMaster\android\` |
 
 ---
@@ -60,8 +60,18 @@
 
 ```
 Arquivo: release\win-unpacked\FinMaster.exe
-SHA-256: 43CE37FA8FA20468599831CD92D26AD6EB187E2AA52CE96B820344720F376894
+SHA-256: E20242D6BC869539499648438CCA0A9B6070BAC0B8CE36B37DE98FBFA8D5919C
 
 Arquivo: release\FinMaster-v1.1.0-win-x64.zip
-SHA-256: 452D7962C18937C16546F72E881D593BC6353D5A9B6B6BDB102BA22BD3C42A6C
+SHA-256: 16AF0BD6E625FBEB3E2FAE72B5264BB6E863C6A0AE2BF3AB4E661F213A947AAD
 ```
+
+---
+
+## 🧪 Validação e Testes Automatizados
+
+- **Suíte de Testes Vitest**: **14/14 testes aprovados** com código de saída 0:
+  - `src/test/example.test.ts` (1 teste aprovado)
+  - `src/test/invoices.test.ts` (9 testes aprovados)
+  - `src/test/resilience-and-ai.test.ts` (4 testes aprovados)
+- **Compilação de Produção Vite**: Tempo total de **12.19s** (3.647 módulos transformados sem erros).

@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { formatCurrency, formatDate, parseLocalDate } from '@/lib/format';
-import { Plus, TrendingUp, TrendingDown, ArrowLeftRight, Loader2, Pencil, Trash2, ChevronLeft, ChevronRight, Search, X, Receipt } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, ArrowLeftRight, Loader2, Pencil, Trash2, ChevronLeft, ChevronRight, Search, X, Receipt, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { transactionSchema, getUserFriendlyError } from '@/lib/validation';
@@ -53,6 +54,8 @@ const Transactions = () => {
   const [editingTx, setEditingTx] = useState<any>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [isBatchMode, setIsBatchMode] = useState(false);
+  const [aiFilledFields, setAiFilledFields] = useState<string[]>([]);
+  const [parsingReceipt, setParsingReceipt] = useState(false);
   const smartInputRef = useRef<SmartTransactionInputHandle>(null);
 
   // Filters
@@ -575,7 +578,16 @@ const Transactions = () => {
       </div>
 
       {/* Transaction Form Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingTx(null); }}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setEditingTx(null);
+            setAiFilledFields([]);
+          }
+        }}
+      >
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingTx ? 'Editar Transação' : 'Nova Transação'}</DialogTitle>
@@ -590,6 +602,13 @@ const Transactions = () => {
               cards={cards}
               contacts={contacts}
               onParsed={(data) => {
+                const detected: string[] = [];
+                if (data.description) detected.push('description');
+                if (data.amount) detected.push('amount');
+                if (data.date) detected.push('date');
+                if (data.category_name) detected.push('category_id');
+                setAiFilledFields(detected);
+
                 setForm(prev => ({
                   ...prev,
                   description: data.description || prev.description,
@@ -615,6 +634,7 @@ const Transactions = () => {
               onBatchStart={() => setIsBatchMode(true)}
               onBatchEnd={() => {
                 setIsBatchMode(false);
+                setAiFilledFields([]);
                 setForm({ ...emptyForm });
               }}
             />
@@ -622,16 +642,37 @@ const Transactions = () => {
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-1.5">
-              <Label>Descrição</Label>
+              <Label className="flex items-center gap-1.5">
+                Descrição
+                {aiFilledFields.includes('description') && (
+                  <Badge variant="outline" className="text-[9px] text-primary border-primary/30 bg-primary/5 py-0 px-1 font-normal">
+                    <Sparkles className="h-2.5 w-2.5 mr-0.5 inline" /> IA
+                  </Badge>
+                )}
+              </Label>
               <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Valor (R$)</Label>
+                <Label className="flex items-center gap-1.5">
+                  Valor (R$)
+                  {aiFilledFields.includes('amount') && (
+                    <Badge variant="outline" className="text-[9px] text-primary border-primary/30 bg-primary/5 py-0 px-1 font-normal">
+                      <Sparkles className="h-2.5 w-2.5 mr-0.5 inline" /> IA
+                    </Badge>
+                  )}
+                </Label>
                 <Input type="number" step="0.01" min="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} required />
               </div>
               <div className="space-y-1.5">
-                <Label>Data</Label>
+                <Label className="flex items-center gap-1.5">
+                  Data
+                  {aiFilledFields.includes('date') && (
+                    <Badge variant="outline" className="text-[9px] text-primary border-primary/30 bg-primary/5 py-0 px-1 font-normal">
+                      <Sparkles className="h-2.5 w-2.5 mr-0.5 inline" /> IA
+                    </Badge>
+                  )}
+                </Label>
                 <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
               </div>
             </div>
@@ -647,7 +688,14 @@ const Transactions = () => {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Categoria</Label>
+              <Label className="flex items-center gap-1.5">
+                Categoria
+                {aiFilledFields.includes('category_id') && (
+                  <Badge variant="outline" className="text-[9px] text-primary border-primary/30 bg-primary/5 py-0 px-1 font-normal">
+                    <Sparkles className="h-2.5 w-2.5 mr-0.5 inline" /> IA
+                  </Badge>
+                )}
+              </Label>
               <Select value={form.category_id} onValueChange={v => setForm({ ...form, category_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
                 <SelectContent>
@@ -791,7 +839,10 @@ const Transactions = () => {
             )}
             <div className="space-y-1.5 pt-1 border-t border-border/50">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium">Comprovante Fiscal (Opcional)</Label>
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  Comprovante Fiscal (Opcional)
+                  {parsingReceipt && <Loader2 className="h-3 w-3 animate-spin text-primary inline" />}
+                </Label>
                 {form.receipt_url && (
                   <button
                     type="button"
@@ -805,18 +856,81 @@ const Transactions = () => {
               <Input
                 type="file"
                 accept="image/*,application/pdf"
+                disabled={parsingReceipt}
                 className="text-xs h-9 cursor-pointer file:mr-2 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-xs file:bg-primary/10 file:text-primary"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file && user?.id) {
-                    const toastId = toast.loading('Enviando comprovante...');
-                    const { url, error } = await uploadReceipt(file, user.id);
-                    toast.dismiss(toastId);
-                    if (url) {
-                      setForm(f => ({ ...f, receipt_url: url }));
-                      toast.success('Comprovante anexado com sucesso!');
-                    } else {
-                      toast.error(error || 'Erro ao enviar comprovante.');
+                    setParsingReceipt(true);
+                    const toastId = toast.loading('Enviando comprovante e analisando com IA...');
+                    try {
+                      const { url, error: uploadError } = await uploadReceipt(file, user.id);
+                      if (url) {
+                        setForm(f => ({ ...f, receipt_url: url }));
+                        toast.success('Comprovante anexado ao armazenamento!');
+                      } else {
+                        toast.error(uploadError || 'Erro ao enviar comprovante.');
+                      }
+
+                      // Extração de dados via IA (OCR + NLP)
+                      const reader = new FileReader();
+                      reader.onload = async () => {
+                        const base64 = reader.result as string;
+                        if (base64) {
+                          try {
+                            const { data, error: parseErr } = await supabase.functions.invoke('parse-transaction', {
+                              body: {
+                                imageBase64: base64,
+                                categories: categories.map(c => ({ id: c.id, name: c.name, type: c.type })),
+                                accounts: accounts.map(a => ({ id: a.id, name: a.name })),
+                                cards: cards.map(c => ({ id: c.id, name: c.name })),
+                              },
+                            });
+
+                            if (!parseErr && data) {
+                              const txData = data.transactions ? data.transactions[0] : data;
+                              if (txData) {
+                                const detected: string[] = [];
+                                const catMatch = txData.category_name
+                                  ? categories.find(c => c.name.toLowerCase() === txData.category_name.toLowerCase())
+                                  : undefined;
+
+                                setForm(prev => {
+                                  const updated = { ...prev };
+                                  if (txData.description) {
+                                    updated.description = txData.description;
+                                    detected.push('description');
+                                  }
+                                  if (txData.amount) {
+                                    updated.amount = String(txData.amount);
+                                    detected.push('amount');
+                                  }
+                                  if (txData.date) {
+                                    updated.date = txData.date;
+                                    detected.push('date');
+                                  }
+                                  if (catMatch) {
+                                    updated.category_id = catMatch.id;
+                                    detected.push('category_id');
+                                  }
+                                  return updated;
+                                });
+
+                                setAiFilledFields(detected);
+                                toast.success('✨ IA extraiu dados do comprovante e preencheu o formulário!');
+                              }
+                            }
+                          } catch (aiErr) {
+                            console.warn('[Transactions] OCR da IA falhou:', aiErr);
+                          }
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    } catch (err: any) {
+                      console.error('[Transactions] Erro no processamento do comprovante:', err);
+                    } finally {
+                      setParsingReceipt(false);
+                      toast.dismiss(toastId);
                     }
                   }
                 }}

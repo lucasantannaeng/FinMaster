@@ -2,6 +2,20 @@ const { app, BrowserWindow, Menu, shell, session, ipcMain, dialog } = require('e
 const path = require('path');
 const http = require('http');
 
+// Blindagem de Instância Única: previne múltiplas instâncias concorrentes disputando sessão e portas locais
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
 let mainWindow = null;
 
 function createWindow() {

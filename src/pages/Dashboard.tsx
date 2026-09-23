@@ -322,6 +322,13 @@ const Dashboard = () => {
           })(),
           monthlyIncome,
           monthExpense,
+          totalCardDebt: totalBill,
+          burnRateMonths: monthExpense > 0 ? Math.round((totalBalance / monthExpense) * 10) / 10 : null,
+          topExpenseCategories: expensesByCategory.map(c => ({
+            category: c.name,
+            amount: c.value,
+            percent: monthExpense > 0 ? Math.round((c.value / monthExpense) * 100) : 0,
+          })),
         }}
       />
 

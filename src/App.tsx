@@ -2,11 +2,13 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { HashRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppSettingsProvider } from "@/hooks/useAppSettings";
-import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { SyncProvider } from "@/hooks/useRealtimeSync";
 import { App as CapApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
@@ -31,9 +33,15 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 2, // 2 minutos
+      gcTime: 1000 * 60 * 60 * 24, // 24 horas no cache offline
       refetchOnWindowFocus: false,
     },
   },
+});
+
+const persister = createSyncStoragePersister({
+  storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  key: 'FINMASTER_OFFLINE_CACHE',
 });
 
 const NativeDeepLinkHandler = () => {
@@ -85,20 +93,14 @@ const NativeDeepLinkHandler = () => {
   return null;
 };
 
-const RealtimeSyncManager = () => {
-  useRealtimeSync();
-  return null;
-};
-
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center min-h-screen bg-background"><div className="animate-pulse text-muted-foreground">Carregando...</div></div>;
   if (!user) return <Navigate to="/auth" replace />;
   return (
-    <>
-      <RealtimeSyncManager />
+    <SyncProvider>
       <AppLayout>{children}</AppLayout>
-    </>
+    </SyncProvider>
   );
 };
 
@@ -110,7 +112,14 @@ const AuthRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider
+    client={queryClient}
+    persistOptions={{
+      persister,
+      maxAge: 1000 * 60 * 60 * 24, // 24 horas no storage offline
+      buster: 'v1.1.1',
+    }}
+  >
     <TooltipProvider>
       <AppSettingsProvider>
         <Toaster />
@@ -138,7 +147,7 @@ const App = () => (
         </HashRouter>
       </AppSettingsProvider>
     </TooltipProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
 );
 
 export default App;

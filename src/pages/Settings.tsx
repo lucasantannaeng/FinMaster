@@ -15,6 +15,7 @@ import {
   Fingerprint,
   Coins,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppSettings } from '@/hooks/useAppSettings';
@@ -364,12 +365,17 @@ const AIConfigCard = () => {
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-2 px-5">
-        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <Coins className="h-4 w-4 text-primary" />
-          Consultor Financeiro IA (Chaves de API)
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Inteligência Artificial & Chaves (BYOK)
+          </CardTitle>
+          <Badge variant={apiKey ? "default" : "outline"} className="text-[10px]">
+            {apiKey ? "BYOK Ativo" : "Nuvem Padronizada"}
+          </Badge>
+        </div>
         <CardDescription className="text-xs">
-          Configure seu provedor de IA preferido para o FinMaster AI.
+          O FinMaster usa o Gemini/Groq gerenciado via Edge Functions por padrão. Se desejar, insira sua própria chave de API gratuita do Google Gemini ou OpenRouter para cotas personalizadas.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-5 space-y-3 pt-2">
@@ -405,9 +411,25 @@ const AIConfigCard = () => {
             </button>
           </div>
         </div>
-        <Button size="sm" onClick={handleSave} className="text-xs">
-          Salvar Configurações de IA
-        </Button>
+        <div className="flex items-center justify-between pt-1">
+          <Button size="sm" onClick={handleSave} className="text-xs">
+            Salvar Configurações de IA
+          </Button>
+          {apiKey && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setApiKey('');
+                localStorage.removeItem('CUSTOM_AI_API_KEY');
+                toast.info('Chave removida. Restaurado para chave padrão do servidor.');
+              }}
+              className="text-xs text-destructive hover:bg-destructive/10"
+            >
+              Restaurar Padrão
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
