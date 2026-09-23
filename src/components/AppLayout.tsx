@@ -3,7 +3,8 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import AppSidebar from './AppSidebar';
 import { useSyncStatus } from '@/hooks/useRealtimeSync';
 import GlobalVoiceInput from './GlobalVoiceInput';
-import { RefreshCw } from 'lucide-react';
+import { GlobalCommandPalette } from '@/components/navigation/GlobalCommandPalette';
+import { RefreshCw, Search } from 'lucide-react';
 
 function SyncStatusPill() {
   const { status, forceSync } = useSyncStatus();
@@ -47,10 +48,22 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   return (
     <SidebarProvider>
       <AppSidebar />
+      <GlobalCommandPalette />
       <SidebarInset>
         <header className="flex h-14 items-center justify-between gap-2 border-b border-border px-4 shrink-0">
           <SidebarTrigger className="-ml-1" />
           <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={() => {
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+              }}
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer border border-border/60 bg-muted/40 hover:bg-muted/70 text-muted-foreground"
+              title="Abrir Command Palette (Ctrl+K)"
+            >
+              <Search className="h-3 w-3" />
+              <span>Buscar</span>
+              <kbd className="text-[10px] font-mono px-1 rounded bg-background border ml-1">Ctrl K</kbd>
+            </button>
             <GlobalVoiceInput />
             <SyncStatusPill />
           </div>

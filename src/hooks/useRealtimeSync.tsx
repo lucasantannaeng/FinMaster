@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { drainOutbox } from '@/services/offlineOutboxService';
 import { useAuth } from './useAuth';
 
 export type SyncStatus = 'connected' | 'reconnecting' | 'offline';
@@ -46,6 +46,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   const forceSync = useCallback(async () => {
     setStatus('reconnecting');
+    if (navigator.onLine) {
+      await drainOutbox().catch(() => {});
+    }
     await invalidateAll();
     if (navigator.onLine) {
       setStatus('connected');
@@ -56,10 +59,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   // Listen to browser online/offline events
   useEffect(() => {
-    const handleOnline = () => {
+    const handleOnline = async () => {
       setIsOnline(true);
       setStatus('reconnecting');
-      invalidateAll().then(() => setStatus('connected'));
+      await drainOutbox().catch(() => {});
+      await invalidateAll();
+      setStatus('connected');
     };
 
     const handleOffline = () => {
