@@ -21,6 +21,9 @@ import SavingsChallengeCard from '@/components/dashboard/SavingsChallengeCard';
 import AIConsultantDialog from '@/components/dashboard/AIConsultantDialog';
 import SafeToSpendCard from '@/components/dashboard/SafeToSpendCard';
 import CryptoRetirementSimulator from '@/components/dashboard/CryptoRetirementSimulator';
+import { CashFlowForecastCard } from '@/components/dashboard/CashFlowForecastCard';
+import { SinkingFundsCard } from '@/components/dashboard/SinkingFundsCard';
+import { SubscriptionsCalendarCard } from '@/components/dashboard/SubscriptionsCalendarCard';
 
 interface CryptoAsset {
   currency: string;
@@ -125,6 +128,11 @@ const Dashboard = () => {
         .order('date', { ascending: false })
         .limit(5);
 
+      const { data: allTxs } = await supabase
+        .from('transactions')
+        .select('date, amount, type, description, is_paid, recurrence')
+        .order('date', { ascending: true });
+
       let cryptoBrl = 0;
       let cryptoData: OkxData | null = null;
       try {
@@ -143,6 +151,7 @@ const Dashboard = () => {
         monthlyIncome,
         expensesByCategory,
         recentTransactions: recent || [],
+        allTransactions: allTxs || [],
         cryptoBrl,
         cryptoData,
       };
@@ -157,6 +166,7 @@ const Dashboard = () => {
   const monthExpense = dashboardData?.monthExpense || 0;
   const monthlyIncome = dashboardData?.monthlyIncome || 0;
   const recentTransactions = dashboardData?.recentTransactions || [];
+  const allTransactions = dashboardData?.allTransactions || [];
   const expensesByCategory = dashboardData?.expensesByCategory || [];
   const cryptoBrl = dashboardData?.cryptoBrl || 0;
   const cryptoData = dashboardData?.cryptoData || null;
@@ -273,6 +283,12 @@ const Dashboard = () => {
         topCategories={expensesByCategory}
       />
 
+      {/* Projeção de Fluxo de Caixa (13 Semanas / 60 Dias) */}
+      <CashFlowForecastCard
+        initialBalance={totalBalance}
+        transactions={allTransactions}
+      />
+
       {/* Crypto Investments */}
       <CryptoCard />
 
@@ -355,6 +371,12 @@ const Dashboard = () => {
         monthlyDcaUsdt={50}
         usdBrl={cryptoData?.usdBrl || 5}
       />
+
+      {/* Potes de Metas & Reservas (Sinking Funds) */}
+      <SinkingFundsCard />
+
+      {/* Calendário de Assinaturas & Recorrências */}
+      <SubscriptionsCalendarCard />
 
       {/* Recent Transactions */}
       <Card className="shadow-sm">
