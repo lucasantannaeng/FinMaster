@@ -8,6 +8,8 @@ import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persist
 import { HashRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppSettingsProvider } from "@/hooks/useAppSettings";
+import { AppLockProvider } from "@/hooks/useAppLock";
+import { AppLockModal } from "@/components/security/AppLockModal";
 import { SyncProvider } from "@/hooks/useRealtimeSync";
 import { App as CapApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
@@ -122,29 +124,32 @@ const App = () => (
   >
     <TooltipProvider>
       <AppSettingsProvider>
-        <Toaster />
-        <Sonner />
-        <HashRouter>
-          <AuthProvider>
-            <NativeDeepLinkHandler />
-            <Suspense fallback={<PageSkeleton />}>
-              <Routes>
-                <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
-                <Route path="/install" element={<Install />} />
-                <Route path="/trust" element={<Trust />} />
-                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-                <Route path="/cards" element={<ProtectedRoute><Cards /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
-                <Route path="/tax-report" element={<ProtectedRoute><TaxReport /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                <Route path="/hourly-rate" element={<ProtectedRoute><HourlyRate /></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </AuthProvider>
-        </HashRouter>
+        <AppLockProvider>
+          <Toaster />
+          <Sonner />
+          <AppLockModal />
+          <HashRouter>
+            <AuthProvider>
+              <NativeDeepLinkHandler />
+              <Suspense fallback={<PageSkeleton />}>
+                <Routes>
+                  <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+                  <Route path="/install" element={<Install />} />
+                  <Route path="/trust" element={<Trust />} />
+                  <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+                  <Route path="/cards" element={<ProtectedRoute><Cards /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+                  <Route path="/tax-report" element={<ProtectedRoute><TaxReport /></ProtectedRoute>} />
+                  <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                  <Route path="/hourly-rate" element={<ProtectedRoute><HourlyRate /></ProtectedRoute>} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </AuthProvider>
+          </HashRouter>
+        </AppLockProvider>
       </AppSettingsProvider>
     </TooltipProvider>
   </PersistQueryClientProvider>

@@ -16,13 +16,36 @@ import {
   Coins,
   AlertTriangle,
   Sparkles,
+  Lock,
+  Unlock,
+  ShieldCheck,
+  Download,
+  Upload,
+  Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { useAppLock } from '@/hooks/useAppLock';
+import { SecurityVaultDialogs } from '@/components/settings/SecurityVaultDialogs';
 import SubscriptionAlerts from '@/components/settings/SubscriptionAlerts';
 
 const Settings = () => {
   const { discreteMode, setDiscreteMode, baseCurrency, setBaseCurrency } = useAppSettings();
+  const {
+    isPinConfigured,
+    autoLockMinutes,
+    lockApp,
+    setupPin,
+    removePin,
+    updateAutoLockMinutes,
+  } = useAppLock();
+
+  const [exportOpen, setExportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [removePinInput, setRemovePinInput] = useState('');
+  const [showRemovePin, setShowRemovePin] = useState(false);
+
   const [biometric, setBiometric] = useState(() => localStorage.getItem('biometric_enabled') === 'true');
   const [biometricSupported, setBiometricSupported] = useState(false);
   const [alertBudget, setAlertBudget] = useState(true);
@@ -170,22 +193,31 @@ const Settings = () => {
         </CardContent>
       </Card>
 
-      {/* Security */}
+      {/* Security & Vault */}
       <Card className="shadow-sm">
         <CardHeader className="pb-2 px-5">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <Shield className="h-4 w-4 text-muted-foreground" />
-            Segurança e Privacidade
+            Segurança, Privacidade & Cofre Criptografado
           </CardTitle>
+          <CardDescription className="text-xs">
+            Proteção local avançada com PIN numérico, bloqueio por inatividade e backup criptografado AES-256.
+          </CardDescription>
         </CardHeader>
         <CardContent className="px-5 space-y-4">
+          {/* Modo Discreto / Atalho de Pânico */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {discreteMode ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
               <div>
-                <Label className="text-sm font-medium">Modo Discreto</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Modo Discreto</Label>
+                  <Badge variant="outline" className="text-[10px] font-mono py-0 px-1.5 text-muted-foreground">
+                    Ctrl + H
+                  </Badge>
+                </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Oculta saldos com ••••
+                  Oculta instantaneamente todos os saldos e valores da tela (Atalho de Pânico).
                 </p>
               </div>
             </div>
@@ -200,6 +232,146 @@ const Settings = () => {
 
           <Separator />
 
+          {/* Bloqueio por PIN & Inatividade */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Lock className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium">Bloqueio do Aplicativo (PIN Lock)</Label>
+                    {isPinConfigured ? (
+                      <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/30 bg-emerald-500/10">
+                        Ativo (4-6 Dígitos)
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                        Desativado
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Exige confirmação de PIN numérico ao abrir o app ou após tempo sem uso.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isPinConfigured ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={() => setPinModalOpen(true)}
+                    >
+                      Alterar PIN
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-destructive hover:bg-destructive/10"
+                      onClick={() => setShowRemovePin(true)}
+                    >
+                      Remover
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => setPinModalOpen(true)}
+                  >
+                    Configurar PIN
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Diálogo em linha para confirmar remoção de PIN */}
+            {showRemovePin && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-2 text-xs">
+                <p className="font-semibold text-destructive">Digite seu PIN atual para desativar o bloqueio:</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="PIN atual"
+                    value={removePinInput}
+                    onChange={(e) => setRemovePinInput(e.target.value)}
+                    className="h-8 px-2 rounded border text-xs bg-background w-32 font-mono"
+                  />
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-8 text-xs"
+                    onClick={async () => {
+                      const success = await removePin(removePinInput);
+                      if (success) {
+                        setShowRemovePin(false);
+                        setRemovePinInput('');
+                      }
+                    }}
+                  >
+                    Confirmar Desativação
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 text-xs"
+                    onClick={() => {
+                      setShowRemovePin(false);
+                      setRemovePinInput('');
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Tempo de Bloqueio por Inatividade */}
+            {isPinConfigured && (
+              <div className="flex items-center justify-between pl-7 pt-1">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Bloquear por inatividade após:</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {[
+                    { label: '1m', val: 1 },
+                    { label: '5m', val: 5 },
+                    { label: '15m', val: 15 },
+                    { label: 'Nunca', val: 0 },
+                  ].map((item) => (
+                    <Button
+                      key={item.label}
+                      variant={autoLockMinutes === item.val ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-6 px-2 text-[11px]"
+                      onClick={() => updateAutoLockMinutes(item.val)}
+                    >
+                      {item.label}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-6 px-2 text-[11px] ml-2 text-primary"
+                    onClick={() => lockApp()}
+                  >
+                    Bloquear Agora
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Autenticação Biométrica */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Fingerprint className="h-4 w-4 text-muted-foreground" />
@@ -221,6 +393,39 @@ const Settings = () => {
                 Indisponível
               </Badge>
             )}
+          </div>
+
+          <Separator />
+
+          {/* Cofre Criptografado (AES-256 E2EE Backup) */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              <div>
+                <Label className="text-sm font-medium">Cofre de Backup Criptografado (E2EE)</Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Exporte ou restaure suas finanças em formato seguro (.finmaster.enc) protegido por AES-256 bits.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs flex-1 sm:flex-none"
+                onClick={() => setExportOpen(true)}
+              >
+                <Download className="h-3.5 w-3.5 mr-1 text-primary" /> Exportar Cofre
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs flex-1 sm:flex-none"
+                onClick={() => setImportOpen(true)}
+              >
+                <Upload className="h-3.5 w-3.5 mr-1" /> Restaurar Cofre
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -263,6 +468,17 @@ const Settings = () => {
 
       {/* OKX API Credentials */}
       <OKXConfigCard />
+
+      {/* Diálogos de Segurança, PIN e Cofre Criptografado */}
+      <SecurityVaultDialogs
+        exportOpen={exportOpen}
+        onExportOpenChange={setExportOpen}
+        importOpen={importOpen}
+        onImportOpenChange={setImportOpen}
+        pinModalOpen={pinModalOpen}
+        onPinModalOpenChange={setPinModalOpen}
+        onPinConfigured={setupPin}
+      />
     </div>
   );
 };
