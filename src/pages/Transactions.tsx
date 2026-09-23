@@ -10,13 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { formatCurrency, formatDate, parseLocalDate } from '@/lib/format';
-import { Plus, TrendingUp, TrendingDown, ArrowLeftRight, Loader2, Pencil, Trash2, ChevronLeft, ChevronRight, Search, X, Receipt, Sparkles } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, ArrowLeftRight, Loader2, Pencil, Trash2, ChevronLeft, ChevronRight, Search, X, Receipt, Sparkles, UploadCloud } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { transactionSchema, getUserFriendlyError } from '@/lib/validation';
 import SmartTransactionInput, { SmartTransactionInputHandle, saveCategoryOverride } from '@/components/SmartTransactionInput';
 import { uploadReceipt } from '@/services/receiptService';
+import { StatementImportModal } from '@/components/transactions/StatementImportModal';
 
 const emptyForm = {
   description: '',
@@ -56,6 +57,7 @@ const Transactions = () => {
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [aiFilledFields, setAiFilledFields] = useState<string[]>([]);
   const [parsingReceipt, setParsingReceipt] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const smartInputRef = useRef<SmartTransactionInputHandle>(null);
 
   // Filters
@@ -426,9 +428,14 @@ const Transactions = () => {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between pt-2">
         <h1 className="text-xl font-bold">Transações</h1>
-        <Button size="sm" onClick={openNew}>
-          <Plus className="h-4 w-4 mr-1" /> Nova
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportModalOpen(true)}>
+            <UploadCloud className="h-4 w-4 mr-1 text-primary" /> Importar Extrato
+          </Button>
+          <Button size="sm" onClick={openNew}>
+            <Plus className="h-4 w-4 mr-1" /> Nova
+          </Button>
+        </div>
       </div>
 
       {/* Month Selector */}
@@ -997,6 +1004,15 @@ const Transactions = () => {
           ))
         )}
       </div>
+
+      <StatementImportModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        accounts={accounts}
+        categories={categories}
+        existingTransactions={transactions}
+        onSuccess={loadData}
+      />
     </div>
   );
 };
