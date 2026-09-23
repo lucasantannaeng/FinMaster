@@ -302,7 +302,7 @@ const Dashboard = () => {
       {/* Projeção de Fluxo de Caixa (13 Semanas / 60 Dias) */}
       <CashFlowForecastCard
         initialBalance={totalBalance}
-        transactions={allTransactions}
+        transactions={allTransactions as any}
       />
 
       {/* Crypto Investments */}
@@ -354,7 +354,7 @@ const Dashboard = () => {
           })(),
           monthlyIncome,
           monthExpense,
-          totalCardDebt: totalBill,
+          totalCardDebt: currentBill,
           burnRateMonths: monthExpense > 0 ? Math.round((totalBalance / monthExpense) * 10) / 10 : null,
           topExpenseCategories: expensesByCategory.map(c => ({
             category: c.name,

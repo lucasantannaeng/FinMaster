@@ -1,3 +1,4 @@
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { drainOutbox } from '@/services/offlineOutboxService';
@@ -27,7 +28,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'reconnecting'
   );
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const invalidateAll = useCallback(async () => {
     await Promise.allSettled([
