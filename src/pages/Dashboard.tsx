@@ -24,6 +24,7 @@ import CryptoRetirementSimulator from '@/components/dashboard/CryptoRetirementSi
 import { CashFlowForecastCard } from '@/components/dashboard/CashFlowForecastCard';
 import { SinkingFundsCard } from '@/components/dashboard/SinkingFundsCard';
 import { SubscriptionsCalendarCard } from '@/components/dashboard/SubscriptionsCalendarCard';
+import { AnomalyWatchdogCard } from '@/components/dashboard/AnomalyWatchdogCard';
 
 interface CryptoAsset {
   currency: string;
@@ -130,7 +131,7 @@ const Dashboard = () => {
 
       const { data: allTxs } = await supabase
         .from('transactions')
-        .select('date, amount, type, description, is_paid, recurrence')
+        .select('id, date, amount, type, description, is_paid, recurrence, category_id')
         .order('date', { ascending: true });
 
       let cryptoBrl = 0;
@@ -150,6 +151,7 @@ const Dashboard = () => {
         monthExpense,
         monthlyIncome,
         expensesByCategory,
+        categories: categories || [],
         recentTransactions: recent || [],
         allTransactions: allTxs || [],
         cryptoBrl,
@@ -167,6 +169,7 @@ const Dashboard = () => {
   const monthlyIncome = dashboardData?.monthlyIncome || 0;
   const recentTransactions = dashboardData?.recentTransactions || [];
   const allTransactions = dashboardData?.allTransactions || [];
+  const categoriesList = dashboardData?.categories || [];
   const expensesByCategory = dashboardData?.expensesByCategory || [];
   const cryptoBrl = dashboardData?.cryptoBrl || 0;
   const cryptoData = dashboardData?.cryptoData || null;
@@ -213,6 +216,19 @@ const Dashboard = () => {
           </Button>
         </div>
       </div>
+
+      {/* Sentinela de Anomalias & Auditoria Financeira (Pierre Finance-inspired) */}
+      <AnomalyWatchdogCard
+        transactions={allTransactions}
+        monthlyIncome={monthlyIncome}
+        monthExpense={monthExpense}
+        categories={categoriesList}
+        onOpenConsultant={(prompt) => {
+          setConsultantInitialMsg(prompt);
+          setConsultantOpen(true);
+        }}
+        onRefreshData={() => refetch()}
+      />
 
       {/* Safe-to-Spend */}
       <SafeToSpendCard
