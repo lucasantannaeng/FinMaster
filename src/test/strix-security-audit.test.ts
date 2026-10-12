@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { preventPrototypePollution, safeMerge } from '@/lib/utils';

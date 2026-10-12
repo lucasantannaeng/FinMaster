@@ -301,19 +301,19 @@ const Transactions = () => {
         const count = recurrence ? 12 : installments;
         const recurringGroupId = (count > 1 || recurrence) ? crypto.randomUUID() : null;
 
-        const baseTx: Record<string, any> = {
+        const baseTx = {
           user_id: user.id,
           description: form.description,
           amount: recurrence ? amount : amount / installments,
           type: form.type,
-          category_id: form.category_id || null,
-          account_id: form.account_id || null,
-          card_id: form.card_id || null,
-          contact_id: form.contact_id || null,
+          category_id: form.category_id ?? null,
+          account_id: form.account_id ?? null,
+          card_id: form.card_id ?? null,
+          contact_id: form.contact_id ?? null,
           is_paid: form.is_paid,
           recurring_group_id: recurringGroupId,
           recurrence: recurrence,
-          receipt_url: form.receipt_url || null,
+          notes: form.receipt_url ?? null,
         };
 
         const txsToInsert = [];

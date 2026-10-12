@@ -112,16 +112,23 @@ const Dashboard = () => {
 
       const { data: categories } = await supabase.from('categories').select('id, name, color');
       const catMap = new Map(categories?.map(c => [c.id, c]) || []);
-      const catTotals = new Map<string, { name: string; value: number; color: string }>();
+      const catTotals = new Map<string, { name: string; value: number; color: string | null }>();
       monthTxs?.filter(t => t.type === 'expense' && t.category_id).forEach(t => {
-        const cat = catMap.get(t.category_id);
+        const cat = catMap.get(t.category_id!);
         if (cat) {
           const existing = catTotals.get(cat.id) || { name: cat.name, value: 0, color: cat.color };
-          existing.value += Number(t.amount);
+          existing.value += Number(t.amount ?? 0);
           catTotals.set(cat.id, existing);
         }
       });
-      const expensesByCategory = Array.from(catTotals.values()).sort((a, b) => b.value - a.value).slice(0, 6);
+      const expensesByCategory = Array.from(catTotals.values())
+        .map(item => ({
+          name: item.name,
+          value: item.value,
+          color: item.color ?? 'hsl(0, 0%, 55%)' // fallback gray
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 6);
 
       const { data: recent } = await supabase
         .from('transactions')
