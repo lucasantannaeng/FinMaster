@@ -43,6 +43,8 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
+      "react-router/dom": path.resolve(import.meta.dirname, "./node_modules/react-router/dist/production/dom-export.js"),
+      "react-router": path.resolve(import.meta.dirname, "./node_modules/react-router/dist/production/index.js"),
     },
   },
 }));
